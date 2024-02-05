@@ -1,0 +1,26 @@
+[project]
+name = "fimbu"
+version = "0.1.0"
+description = "A thin functionnal layer over litestar and edgy ORM"
+authors = [
+    {name = "Edimedia Mutoke", email = "kilufyamutoke@gmail.com"},
+]
+dependencies = [
+    "edgy>=0.9.2",
+    "litestar[standard]>=2.5.5",
+    "black>=24.1.1",
+]
+requires-python = ">=3.10"
+readme = "README.md"
+license = {text = "MIT"}
+
+[project.optional-dependencies]
+shell = [
+    "ptpython>=3.0.25",
+]
+[build-system]
+requires = ["pdm-backend"]
+build-backend = "pdm.backend"
+
+[project.scripts]
+fimbu = "fimbu.core.initializer.starter:main"
