@@ -12,7 +12,7 @@ from jinja2 import Environment, FileSystemLoader
 import fimbu
 from fimbu.core.exceptions import CommandError
 
-os.environ.setdefault('OYA_SETTINGS_MODULE', 'fimbu.conf.global_settings')
+os.environ.setdefault('FIMBU_SETTINGS_MODULE', 'fimbu.conf.global_settings')
 os.environ.setdefault('INITIALISER', 'RUN')
 
 from fimbu.utils.crypto import get_random_secret_key 

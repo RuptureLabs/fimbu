@@ -1,6 +1,6 @@
 """
 Copied from Django
-Settings and configuration for Oya.
+Settings and configuration for fimbu.
 
 Read values from the module specified by the DJANGO_SETTINGS_MODULE environment
 variable, and then from django.conf.global_settings; see the global_settings.py
@@ -12,12 +12,12 @@ import os
 import time
 from pathlib import Path
 
-from oya.utils.functional import LazyObject, empty
-from oya.conf import global_settings
-from  oya.core.exceptions import ImproperlyConfigured
+from fimbu.utils.functional import LazyObject, empty
+from fimbu.conf import global_settings
+from  fimbu.core.exceptions import ImproperlyConfigured
 
 
-ENVIRONMENT_VARIABLE = "OYA_SETTINGS_MODULE"
+ENVIRONMENT_VARIABLE = "FIMBU_SETTINGS_MODULE"
 DEFAULT_STORAGE_ALIAS = "default"
 STATICFILES_STORAGE_ALIAS = "staticfiles"
 
@@ -39,9 +39,9 @@ class SettingsReference(str):
 
 class LazySettings(LazyObject):
     """
-    A lazy proxy for either global Oya settings or a custom settings object.
+    A lazy proxy for either global FIMBU settings or a custom settings object.
     The user can manually configure settings prior to using them. Otherwise,
-    Django uses the settings module pointed to by OYA_SETTINGS_MODULE.
+    Django uses the settings module pointed to by FIMBU_SETTINGS_MODULE.
     """
 
     def _setup(self, name=None):
@@ -228,4 +228,3 @@ class UserSettingsHolder:
 
 
 settings = LazySettings()
-
