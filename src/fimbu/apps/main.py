@@ -1,4 +1,4 @@
-from oya.apps.asgi import Application
+from fimbu.apps.asgi import Application
 
 
 _app = Application()

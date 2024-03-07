@@ -8,8 +8,8 @@ from litestar.config.compression import CompressionConfig
 from litestar.config.response_cache import ResponseCacheConfig
 
 
-from oya.conf import settings
-from oya.core.exceptions import ImproperlyConfigured
+from fimbu.conf import settings
+from fimbu.core.exceptions import ImproperlyConfigured
 
 
 @cache
