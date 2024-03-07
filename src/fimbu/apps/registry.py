@@ -94,32 +94,11 @@ class Apps:
         for app_config in self.get_app_configs():
             app_config.ready()
 
-        init = os.environ.get('INITIALISER', None)
-
-        if not init:
-            self.prepare_toirtoise_config()
-
 
     def get_app_configs(self) -> Iterable[AppConfig]:
         """Import applications and return an iterable of app configs."""
         return self.app_configs.values()
     
-
-    def prepare_toirtoise_config(self):
-        for app_config in self.get_app_configs():
-            self.tortoise_apps_config[app_config.label] = {
-                'models' : [app_config.get_models()], # will support many models in the future, like is designed by toirtoise
-                "default_connection": "default",       # Connection too will be added on the App Config
-            }
-
-        self.tortoise_prepared = True
-        settings.TORTOISE_ORM['apps'].update(self.tortoise_apps_config)
-
-
-    def get_toirtoise_app_config(self):
-        if not self.tortoise_prepared:
-            self.prepare_toirtoise_config()
-        return self.tortoise_apps_config
 
     def get_app_config(self, app_label) -> AppConfig:
         """

@@ -3,7 +3,7 @@ Expose the Application ASGI Factory
 
 """
 
-from typing import Any, List, Sequence, Union, Mapping
+from typing import Any, List, Sequence, Union
 from collections.abc import Callable
 from pathlib import Path
 from litestar.datastructures.response_header import ResponseHeader
@@ -28,12 +28,10 @@ from litestar.connection import WebSocket, Request
 from litestar import Litestar
 
 
-from oya.core.exceptions import ImproperlyConfigured
-from oya.core.management.utils import close_tortoise, init_tortoise_auto
-from oya.core.serialization import TortoiseSerializationPlugin
-from oya.conf import settings
-from oya.apps import apps
-from oya.middleware.builtins import (
+from fimbu.core.exceptions import ImproperlyConfigured
+from fimbu.conf import settings
+from fimbu.apps import apps
+from fimbu.middleware.builtins import (
     get_allowed_hosts_config,
     get_compression_config,
     get_cors_config,
@@ -58,13 +56,13 @@ class Application:
     """
 
     asgi_application : "Litestar" = None
-    plugins: List[Any] = [TortoiseSerializationPlugin()]
+    plugins: List[Any] = []
     middlewares: List[Any] = []
     dependencies: dict[str, Any] = {}
 
     on_app_init: List[Callable[[Any], Any]] = []
-    on_startup: List[Callable[[Any], Any]] = [init_tortoise_auto]   # default
-    on_shutdown: List[Callable[[Any], Any]] = [close_tortoise]      # default
+    on_startup: List[Callable[[Any], Any]] = []
+    on_shutdown: List[Callable[[Any], Any]] = []
 
     route_handlers: List[Callable[[Any], Any]] = []
 

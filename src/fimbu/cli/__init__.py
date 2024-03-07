@@ -1,14 +1,9 @@
-import os
 from pathlib import Path
 import click
 from click import Command, Context
 from rich_click import Path as ClickPath
 import typing
-from functools import wraps
 
-from edgy.cli.constants import APP_PARAMETER, EXCLUDED_COMMANDS, HELP_PARAMETER, IGNORE_COMMANDS
-from edgy.cli.env import MigrationEnv
-from litestar.cli._utils import LitestarGroup
 from litestar.cli.commands import core, sessions, schema
 from edgy.cli.operations import (
     check,
@@ -33,6 +28,7 @@ from edgy.core.terminal import Print
 from edgy.exceptions import CommandEnvironmentError
 from fimbu.cli._utils import FimbuExtensionGroup
 from fimbu.cli.env import FimbuEnv
+from fimbu.conf import settings
 from litestar.types import AnyCallable
 
 
@@ -41,7 +37,12 @@ T = typing.TypeVar("T")
 
 
 @click.group(cls=FimbuExtensionGroup, context_settings={"help_option_names": ["-h", "--help"]})
-@click.option("--app", "app_path", help="Module path to a Litestar application")
+@click.option(
+    "--app",
+    "app_path",
+    help="Module path to a Litestar application",
+    default=settings.ASGI_APPLICATION,
+    )
 @click.option(
     "--app-dir",
     help="Look for APP in the specified directory, by adding this to the PYTHONPATH. Defaults to the current working directory.",

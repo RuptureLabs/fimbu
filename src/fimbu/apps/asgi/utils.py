@@ -3,9 +3,9 @@ from pathlib import Path
 from litestar.template.config import TemplateConfig
 from litestar.static_files.config import StaticFilesConfig
 
-from oya.conf import settings
-from oya.core.exceptions import ImproperlyConfigured, LoadMiddlewareError
-from oya.utils.module_loading import import_string
+from fimbu.conf import settings
+from fimbu.core.exceptions import ImproperlyConfigured, LoadMiddlewareError
+from fimbu.utils.module_loading import import_string
 
 
 
