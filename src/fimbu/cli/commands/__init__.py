@@ -11,24 +11,22 @@ from jinja2 import Environment, FileSystemLoader
 
 import fimbu
 from fimbu.core.exceptions import CommandError
-
-os.environ.setdefault('FIMBU_SETTINGS_MODULE', 'fimbu.conf.global_settings')
-os.environ.setdefault('INITIALISER', 'RUN')
-
 from fimbu.utils.crypto import get_random_secret_key 
-from fimbu.cli import fimbu_cli
 
 
 STATIC_DIR = 'static'
 TEMPLATES_DIR = 'templates'
 
+__all__ = [
+    'start_project',
+    'start_application',
+]
 
 @click.command()
-@click.option(
-    '-n', '--name',
+@click.argument(
+    'name',
     required=True,
-    type=str,
-    help="The name of the project"
+    type=str
 )
 @click.option(
     '-d', '--dest', 'dest', 
@@ -44,17 +42,17 @@ TEMPLATES_DIR = 'templates'
     type=click.Choice([16, 24, 32]),
     help="The size of the secret key"
 )
-def start_project(name: str, dest: str):
+def start_project(name: str, dest: str, secret_key_size: int):
     """A template starter for fimbu project"""
-    pass
+    starter = Starter(name=name, application=False, directory=dest, secret_key_size=int(secret_key_size))
+    starter.execute()
 
 
 @click.command()
-@click.option(
-    '-n', '--name',
-    required=True,
-    type=str,
-    help="The name of the application"
+@click.argument(
+    'name',
+    nargs=1,
+    type=str
 )
 @click.option(
     '-d', '--dest', 'dest',
@@ -65,39 +63,30 @@ def start_project(name: str, dest: str):
 )
 def start_app(name: str, dest: str):
     """A template starter for fimbu application"""
-    pass
+    starter = Starter(name=name, application=True, directory=dest, secret_key_size=16)
+    starter.execute()
 
 
 class Starter(object):
-    url_schemes: List = ['http', 'https', 'ftp']
     
     def __init__(self, **options):
         self.secret_key_size = options['secret_key_size']
+        self.name = options['name']
+        self.options = options
 
 
-    def execute(self, name:str, **options):
-        # pylint: disable=W0221
-        # pylint: disable=W0201
+    def execute(self):
+        self.app_or_project_name = self.name
 
-        self.app_or_project_name = name
-        self.verbosity: Any =  options['verbosity']
+        self.is_application = self.options['application'] == True
+        self.a_or_an = "an" if self.is_application else "a"
 
-        if (options['application'] and options['project']) or (not options['application'] and not options['project']):
-            self.stdout.write(
-                "Please you must provide one argument --project/-p OR --application/-a"
-            )
-            sys.exit(-1)
-        else:
-            self.is_application = options['application'] == True
-            self.a_or_an = "an" if self.is_application else "a"
+        target = self.options['directory']
+        self.validate_name(self.name)
 
-        target = options['directory']
-
-        self.validate_name(name)
-
-        base_name = name
-        camel_case_name = self.camel_case(name)
-        snake_case_name = self.snake_case(name)
+        base_name = self.name
+        camel_case_name = self.camel_case(self.name)
+        snake_case_name = self.snake_case(self.name)
 
         if target is None:
             root_dir = os.path.join(os.getcwd(), snake_case_name)
@@ -122,7 +111,7 @@ class Starter(object):
 
         template_context = {
             "oya_version": fimbu.__version__,
-            'secret_key' : get_random_secret_key(),
+            'secret_key' : get_random_secret_key(self.secret_key_size),
             'base_name' : base_name,
             'camel_case_name' : camel_case_name,
             'snake_case_name' : snake_case_name,
@@ -151,9 +140,9 @@ class Starter(object):
             os.mkdir(output_dir_path)
 
         if not self.is_application:
-            self.copy_jinja_file(TEMPLATE_BASE_DIR, 'manage.py.jinja', root_dir, template_context)
-            os.mkdir(os.path.join(root_dir, STATIC_DIR))
-            os.mkdir(os.path.join(root_dir, TEMPLATES_DIR))
+            self.copy_jinja_file(TEMPLATE_BASE_DIR, 'fimbu.ini.jinja', root_dir, template_context)
+            self.mkdir(os.path.join(root_dir, STATIC_DIR))
+            self.mkdir(os.path.join(root_dir, TEMPLATES_DIR))
 
         for directory in tree:
             dir_path, sub_dir_names, files_names = directory
@@ -267,3 +256,11 @@ class Starter(object):
         Convert String to CamelCase
         """
         return name.replace('_', ' ').title().replace(' ', '')
+
+
+    def mkdir(self, path):
+        """
+        Create directory
+        """
+        if not os.path.exists(path):
+            os.mkdir(path)

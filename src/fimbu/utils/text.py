@@ -6,9 +6,9 @@ from gzip import GzipFile
 from gzip import compress as gzip_compress
 from io import BytesIO
 
-from oya.core.exceptions import SuspiciousFileOperation
-from oya.utils.functional import keep_lazy_text, lazy
-from oya.utils.regex_helper import _lazy_re_compile
+from fimbu.core.exceptions import SuspiciousFileOperation
+from fimbu.utils.functional import keep_lazy_text, lazy
+from fimbu.utils.regex_helper import _lazy_re_compile
 
 
 @keep_lazy_text

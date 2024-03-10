@@ -25,18 +25,30 @@ from edgy.cli.operations import (
     stamp,
 )
 
-from fimbu.core.utils import load_init_settings
+from .commands import start_app, start_project
+
+
+from fimbu.core.utils import setup_fimbu
 from fimbu.cli._utils import FimbuExtensionGroup
 from fimbu.cli.env import FimbuEnv
 from fimbu.conf import settings
 from fimbu.db import build_db_url
 from litestar.types import AnyCallable
 
-config = load_init_settings()
-os.environ.setdefault('FIMBU_SETTINGS_MODULE', config['default']['settings'])
+
+setup_fimbu() # setup fimbu cli
+
+
+from fimbu.conf import settings
+
 
 P = typing.ParamSpec("P")
 T = typing.TypeVar("T")
+
+
+__all__ = [
+    "fimbu_cli",
+]
 
 
 @click.group(cls=FimbuExtensionGroup, context_settings={"help_option_names": ["-h", "--help"]})
@@ -66,6 +78,9 @@ fimbu_cli.add_command(core.version_command)
 fimbu_cli.add_command(core.run_command)
 fimbu_cli.add_command(sessions.sessions_group)
 fimbu_cli.add_command(schema.schema_group)
+
+fimbu_cli.add_command(start_app, name="start-app")
+fimbu_cli.add_command(start_project, name="start-project")
 
 fimbu_cli.add_command(list_templates)
 fimbu_cli.add_command(init, name="init")

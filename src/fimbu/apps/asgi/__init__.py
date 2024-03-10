@@ -45,7 +45,7 @@ from fimbu.db import get_db_connection
 
 __all__ = ("Application",)
 
-
+db, registry = get_db_connection()
 
 class Litestar(OriginalLitestar):
     """
@@ -68,8 +68,8 @@ class Application:
     dependencies: dict[str, Any] = {}
 
     on_app_init: List[Callable[[Any], Any]] = []
-    on_startup: List[Callable[[Any], Any]] = []
-    on_shutdown: List[Callable[[Any], Any]] = []
+    on_startup: List[Callable[[Any], Any]] = [db.connect]
+    on_shutdown: List[Callable[[Any], Any]] = [db.disconnect]
 
     route_handlers: List[Callable[[Any], Any]] = []
 
@@ -302,7 +302,6 @@ class Application:
 
         cls.asgi_application = Litestar(**app_config)
 
-        db, registry = get_db_connection()
         Migrate(cls.asgi_application, registry)
 
         return cls.asgi_application

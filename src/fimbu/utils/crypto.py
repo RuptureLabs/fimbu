@@ -5,8 +5,8 @@ import hashlib
 import hmac
 import secrets
 
-from oya.conf import settings
-from oya.utils.encoding import force_bytes
+from fimbu.conf import settings
+from fimbu.utils.encoding import force_bytes
 
 
 class InvalidAlgorithm(ValueError):

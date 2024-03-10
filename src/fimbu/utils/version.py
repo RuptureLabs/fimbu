@@ -4,7 +4,7 @@ import os
 import subprocess
 import sys
 
-from oya.utils.regex_helper import _lazy_re_compile
+from fimbu.utils.regex_helper import _lazy_re_compile
 
 # Private, stable API for detecting the Python version. PYXY means "Python X.Y
 # or later". So that third-party apps can use these values, each constant

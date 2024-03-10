@@ -27,10 +27,6 @@ ASGI_APPLICATION = 'fimbu.apps.main:app'
 DATABASES = {
     "engine": "sqlite",
     "database": "database.db",
-    "host": "127.0.0.1",
-    "password": "stone#",
-    "port": 5432,
-    "user": "eddy",
 }
 
 
@@ -97,7 +93,7 @@ UVICORN_LOG_LEVEL = 'info'
 
 ########## ------------------------------- OYA ------------------------------------ ##########
 OYA_VERSION = '0.0.1'
-APP_NAME = "{{ camel_case_name }}"
+APP_NAME = "fimbu"
 
 
 ####### -------------------------------- ALLOWED HOSTS CONFIG --------------------- #########

@@ -17,7 +17,6 @@ SECRET = '{{ secret_key }}'
 DEBUG = True
 
 
-
 # Application definition
 
 INSTALLED_APPS = []
@@ -26,22 +25,13 @@ MIDDLEWARE = []
 
 MIDDLEWARE_FROM_FACTORY_BEFORE = False
 
-ROOT_URLCONF = 'api.urls'
-
 
 ASGI_APPLICATION = '{{camel_case_name}}.main:application'
 
-SQLITE_DB = "fimbu_db.sqlite3"
 
 DATABASES = {
     "engine": "sqlite",
-    "credentials": {
-        "database": 'farde',
-        "host": "127.0.0.1",
-        "password": "stone#",
-        "port": 5432,
-        "user": "eddy",
-    }
+    "database": "database.db",
 }
 
 
@@ -68,13 +58,6 @@ STATIC_FILES = [
         'NAME' : "static",
         'AS_ATTACHMENT' : False
     },
-    StaticFilesConfig(
-        directories=["static"],
-        path="/some_folder/static/path",
-        html_mode=False,
-        name="static",
-        send_as_attachment=True,
-    ),
 ]
 
 # Internationalization
@@ -96,9 +79,6 @@ MIGRATIONS_PER_APP = False # experimental
 MIGRATIONS_LOCATION = BASE_DIR / APP_MIGRATIONS_FOLDER
 
 
-
-TEST_RUNNER = 'oya.test.runner.DiscoverRunner'
-
 ########### ------------------------------ UVICORN ---------------------------------- ##########
 
 UVICORN_PORT = 8080
@@ -106,8 +86,8 @@ UVICORN_LOG_LEVEL = 'info'
 
 
 
-########## ------------------------------- OYA ------------------------------------ ##########
-OYA_VERSION = '0.0.1'
+########## ------------------------------- FIMBU ------------------------------------ ##########
+FIMBU_VERSION = '0.0.1'
 APP_NAME = "{{ camel_case_name }}"
 
 

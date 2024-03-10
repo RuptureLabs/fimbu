@@ -28,8 +28,6 @@ class Apps:
 
         
         self.all_models = defaultdict(dict[str, AppConfig])
-        # self.tortoise_apps_config : dict[str, dict[str, str | list[str]]] = {}
-        # self.tortoise_prepared = False
 
         self.app_configs : dict[str, AppConfig] = {}
 

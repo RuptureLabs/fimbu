@@ -5,7 +5,7 @@ from decimal import Decimal
 from types import NoneType
 from urllib.parse import quote
 
-from oya.utils.functional import Promise
+from fimbu.utils.functional import Promise
 
 
 class DjangoUnicodeDecodeError(UnicodeDecodeError):

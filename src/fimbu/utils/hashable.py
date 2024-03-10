@@ -1,4 +1,4 @@
-from oya.utils.itercompat import is_iterable
+from fimbu.utils.itercompat import is_iterable
 
 
 def make_hashable(value):

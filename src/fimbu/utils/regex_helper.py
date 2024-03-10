@@ -7,7 +7,7 @@ should be good enough for a large class of URLS, however.
 """
 import re
 
-from oya.utils.functional import SimpleLazyObject
+from fimbu.utils.functional import SimpleLazyObject
 
 # Mapping of an escape character to a representative of that class. So, e.g.,
 # "\w" is replaced by "x" in a reverse URL. A value of None means to ignore
