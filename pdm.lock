@@ -5,7 +5,20 @@
 groups = ["default", "shell"]
 strategy = ["cross_platform"]
 lock_version = "4.4"
-content_hash = "sha256:4d271d1762c7336920faf38ef4d6b40ba235e714a82344ad7473d1e1f65aa359"
+content_hash = "sha256:4e35f5f4edce95a1eef2545eb81de0a17f63a19b58b01d90ba70c86312f7766a"
+
+[[package]]
+name = "aiosqlite"
+version = "0.20.0"
+requires_python = ">=3.8"
+summary = "asyncio bridge to the standard sqlite3 module"
+dependencies = [
+    "typing-extensions>=4.0",
+]
+files = [
+    {file = "aiosqlite-0.20.0-py3-none-any.whl", hash = "sha256:36a1deaca0cac40ebe32aac9977a6e2bbc7f5189f23f4a54d5908986729e5bd6"},
+    {file = "aiosqlite-0.20.0.tar.gz", hash = "sha256:6d35c8c256637f4672f843c31021464090805bf925385ac39473fb16eaaca3d7"},
+]
 
 [[package]]
 name = "alembic"

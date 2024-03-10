@@ -1,6 +1,5 @@
 """
 Expose the Application ASGI Factory
-
 """
 
 from typing import Any, List, Sequence, Union
@@ -25,7 +24,7 @@ from litestar.events import BaseEventEmitterBackend
 from litestar.openapi import OpenAPIConfig
 from litestar.openapi.spec import SecurityRequirement
 from litestar.connection import WebSocket, Request
-from litestar import Litestar
+from litestar import Litestar as OriginalLitestar
 
 
 from fimbu.core.exceptions import ImproperlyConfigured
@@ -41,11 +40,19 @@ from fimbu.middleware.builtins import (
 
 from .utils import get_template_config, get_static_file_config, get_middleware
 
-
+from fimbu.db import Migrate, EdgyExtra
+from fimbu.db import get_db_connection
 
 __all__ = ("Application",)
 
 
+
+class Litestar(OriginalLitestar):
+    """
+    Litestar Application without __slots__
+    Necessary for migrations to work
+    """
+    pass
 
 
 class Application:
@@ -293,8 +300,10 @@ class Application:
 
         app_config["route_handlers"] = set(routes) # unique
 
-
         cls.asgi_application = Litestar(**app_config)
+
+        db, registry = get_db_connection()
+        Migrate(cls.asgi_application, registry)
 
         return cls.asgi_application
 

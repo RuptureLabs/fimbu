@@ -1,6 +1,7 @@
+import os
 from pathlib import Path
 import click
-from click import Command, Context
+from click import Context
 from rich_click import Path as ClickPath
 import typing
 
@@ -24,13 +25,15 @@ from edgy.cli.operations import (
     stamp,
 )
 
-from edgy.core.terminal import Print
-from edgy.exceptions import CommandEnvironmentError
+from fimbu.core.utils import load_init_settings
 from fimbu.cli._utils import FimbuExtensionGroup
 from fimbu.cli.env import FimbuEnv
 from fimbu.conf import settings
+from fimbu.db import build_db_url
 from litestar.types import AnyCallable
 
+config = load_init_settings()
+os.environ.setdefault('FIMBU_SETTINGS_MODULE', config['default']['settings'])
 
 P = typing.ParamSpec("P")
 T = typing.TypeVar("T")
@@ -52,6 +55,7 @@ T = typing.TypeVar("T")
 )
 @click.pass_context
 def fimbu_cli(ctx: Context, app_path: str | None, app_dir: Path | None = None):
+    os.environ.setdefault("EDGY_DATABASE_URL", build_db_url())
     if ctx.obj is None:
         ctx.obj = lambda: FimbuEnv.from_env(app_path=app_path, app_dir=app_dir)
 

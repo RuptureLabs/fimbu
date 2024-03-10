@@ -23,17 +23,14 @@ ROOT_URLCONF = 'api.urls'
 
 ASGI_APPLICATION = 'fimbu.apps.main:app'
 
-SQLITE_DB = "fimbu_db.sqlite3"
 
 DATABASES = {
     "engine": "sqlite",
-    "credentials": {
-        "database": 'farde',
-        "host": "127.0.0.1",
-        "password": "stone#",
-        "port": 5432,
-        "user": "eddy",
-    }
+    "database": "database.db",
+    "host": "127.0.0.1",
+    "password": "stone#",
+    "port": 5432,
+    "user": "eddy",
 }
 
 
