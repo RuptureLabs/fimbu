@@ -20,12 +20,12 @@ from edgy.cli.operations import (
     merge,
     migrate,
     revision,
-    shell,
+    # shell, # Doesn't work well with Litestar.lifespan
     show,
     stamp,
 )
 
-from .commands import start_app, start_project
+from .commands import start_app, start_project, shell
 
 
 from fimbu.core.utils import setup_fimbu

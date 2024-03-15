@@ -1,13 +1,22 @@
 from __future__ import annotations
-from typing import List, Any
+from typing import List, Any, Callable, Optional, Sequence
 import os, sys
+import select
 import stat
 import shutil
 from importlib.util import find_spec
+import nest_asyncio
 
 import black
 import click
 from jinja2 import Environment, FileSystemLoader
+
+from edgy import Registry
+from edgy.cli.env import MigrationEnv
+from edgy.cli.operations.shell.base import handle_lifespan_events
+from edgy.cli.operations.shell.enums import ShellOption
+from edgy.core.events import AyncLifespanContextManager
+from edgy.core.sync import execsync
 
 import fimbu
 from fimbu.core.exceptions import CommandError
@@ -264,3 +273,45 @@ class Starter(object):
         """
         if not os.path.exists(path):
             os.mkdir(path)
+
+
+@click.command()
+def shell(env: MigrationEnv) -> None:
+    """
+    Starts an interactive ipython shell with all the models
+    and important python libraries.
+
+    This can be used with a Migration class or with EdgyExtra object lookup.
+    """
+    try:
+        registry = env.app._edgy_db["migrate"].registry  # type: ignore
+    except AttributeError:
+        registry = env.app._edgy_extra["extra"].registry  # type: ignore
+
+    if (
+        sys.platform != "win32"
+        and not sys.stdin.isatty()
+        and select.select([sys.stdin], [], [], 0)[0]
+    ):
+        exec(sys.stdin.read(), globals())
+        return
+
+    on_startup = getattr(env.app, "on_startup", [])
+    on_shutdown = getattr(env.app, "on_shutdown", [])
+    lifespan = getattr(env.app, "lifespan", None)
+    lifespan = handle_lifespan_events(
+        on_startup=on_startup, on_shutdown=on_shutdown, lifespan=lifespan
+    )
+    execsync(run_shell)(env.app, lifespan, registry)
+    return None
+
+
+async def run_shell(app: Any, lifespan: Any, registry: Registry) -> None:
+    """Executes the database shell connection"""
+
+    async with lifespan():
+        from edgy.cli.operations.shell.ptpython import get_ptpython
+
+        ptpython = get_ptpython(app=app, registry=registry)
+        nest_asyncio.apply()
+        ptpython()
