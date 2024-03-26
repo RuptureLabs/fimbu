@@ -14,7 +14,7 @@ from edgy.cli.operations import (
     heads,
     history,
     init,
-    inspect_db,
+    # inspect_db, # Use custom command
     list_templates,
     makemigrations,
     merge,
@@ -25,18 +25,18 @@ from edgy.cli.operations import (
     stamp,
 )
 
-from .commands import start_app, start_project, shell
+from .commands import start_app, start_project, shell, inspect_db
 
 
 from fimbu.core.utils import setup_fimbu
+
+setup_fimbu() # setup fimbu cli
+
 from fimbu.cli._utils import FimbuExtensionGroup
 from fimbu.cli.env import FimbuEnv
 from fimbu.conf import settings
-from fimbu.db import build_db_url
+from fimbu.db import database_registry
 from litestar.types import AnyCallable
-
-
-setup_fimbu() # setup fimbu cli
 
 
 from fimbu.conf import settings
@@ -67,14 +67,27 @@ __all__ = [
 )
 @click.pass_context
 def fimbu_cli(ctx: Context, app_path: str | None, app_dir: Path | None = None):
-    os.environ.setdefault("EDGY_DATABASE_URL", build_db_url())
+    os.environ.setdefault("EDGY_DATABASE_URL", database_registry.get_primary_db().url._url)
     if ctx.obj is None:
         ctx.obj = lambda: FimbuEnv.from_env(app_path=app_path, app_dir=app_dir)
 
 
+@fimbu_cli.command(name="version")
+def version_command() -> None:
+    """Show the currently installed Litestar version."""
+    from litestar import __version__ as liver
+    from fimbu import __version__ as fiver
+    from edgy import __version__ as edver
+
+    click.echo("""Fimbu version: {}
+litestar: {}
+edgy: {}
+""".format(fiver, liver.formatted(short=False), edver))
+
+
 fimbu_cli.add_command(core.info_command)
 fimbu_cli.add_command(core.routes_command)
-fimbu_cli.add_command(core.version_command)
+fimbu_cli.add_command(version_command)
 fimbu_cli.add_command(core.run_command)
 fimbu_cli.add_command(sessions.sessions_group)
 fimbu_cli.add_command(schema.schema_group)

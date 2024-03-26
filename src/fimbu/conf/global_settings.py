@@ -24,10 +24,13 @@ ROOT_URLCONF = 'api.urls'
 ASGI_APPLICATION = 'fimbu.apps.main:app'
 
 
-DATABASES = {
+DATABASES = [
+    {
+    "primary": True,
     "engine": "sqlite",
     "database": "database.db",
-}
+    },
+]
 
 
 # Templates

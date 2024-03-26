@@ -14,9 +14,8 @@ from jinja2 import Environment, FileSystemLoader
 from edgy import Registry
 from edgy.cli.env import MigrationEnv
 from edgy.cli.operations.shell.base import handle_lifespan_events
-from edgy.cli.operations.shell.enums import ShellOption
-from edgy.core.events import AyncLifespanContextManager
 from edgy.core.sync import execsync
+from edgy.utils.inspect import InspectDB
 
 import fimbu
 from fimbu.core.exceptions import CommandError
@@ -315,3 +314,21 @@ async def run_shell(app: Any, lifespan: Any, registry: Registry) -> None:
         ptpython = get_ptpython(app=app, registry=registry)
         nest_asyncio.apply()
         ptpython()
+
+
+
+@click.option(
+    "--schema",
+    default=None,
+    help=("Database schema to be applied."),
+)
+@click.command()
+def inspect_db(
+    schema: str | None = None,
+) -> None:
+    """
+    Inspects an existing database and generates the Edgy reflect models.
+    """
+    database = os.environ.get("EDGY_DATABASE_URL")
+    inspect_db = InspectDB(database=database, schema=schema)
+    inspect_db.inspect()

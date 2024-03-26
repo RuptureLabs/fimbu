@@ -93,8 +93,8 @@ def get_static_file_config() -> List[StaticFilesConfig]:
 
 
 
-def get_middleware():
-    """Load Middlewares from oya settings"""
+def get_middleware()-> List:
+    """Load Middlewares from settings"""
     _mids = []
     if hasattr(settings, 'MIDDLEWARE'):
         mids:Iterable = settings.MIDDLEWARE

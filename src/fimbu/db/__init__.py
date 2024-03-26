@@ -37,7 +37,7 @@ from edgy.core.extras import EdgyExtra
 from edgy.core.signals import Signal
 from edgy.core.utils.sync import run_sync
 from edgy.exceptions import MultipleObjectsReturned, ObjectNotFound
-from .utils import get_db_connection, get_database, build_db_url
+from .utils import get_db_connection, get_db_registry, get_database, database_registry
 
 __all__ = [
     "and_",
@@ -91,6 +91,8 @@ __all__ = [
     "settings",
     "run_sync",
     "get_db_connection",
+    "get_db_registry",
+    "database_registry",
     "get_database",
     "build_db_url",
 ]

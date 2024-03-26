@@ -19,6 +19,8 @@ from edgy.exceptions import (
     CommandEnvironmentError
 )
 
+from fimbu.core.exceptions import FimbuException
+
 __all__ = [
     "ObjectNotFound",
     "MultipleObjectsReturned",
@@ -35,3 +37,7 @@ __all__ = [
     "RelationshipNotFound",
     "CommandEnvironmentError"
 ]
+
+
+class DatabaseNotFound(FimbuException):
+    pass

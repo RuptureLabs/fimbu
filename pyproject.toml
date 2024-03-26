@@ -1,9 +1,32 @@
 [project]
 name = "fimbu"
-version = "0.1.0"
+version = "0.2.1"
 description = "A thin functionnal layer over litestar and edgy ORM"
 authors = [
     {name = "Edimedia Mutoke", email = "kilufyamutoke@gmail.com"},
+]
+keywords = ["api", "rest", "asgi", "litestar", "starlite", "fimbu", "edgy ORM"]
+classifiers = [
+  "Development Status :: 5 - Production/Stable",
+  "Environment :: Web Environment",
+  "License :: OSI Approved :: MIT License",
+  "Natural Language :: English",
+  "Operating System :: OS Independent",
+  "Programming Language :: Python :: 3.10",
+  "Programming Language :: Python :: 3.11",
+  "Programming Language :: Python :: 3.12",
+  "Programming Language :: Python",
+  "Topic :: Internet :: WWW/HTTP",
+  "Topic :: Software Development :: Libraries",
+  "Topic :: Software Development",
+  "Typing :: Typed",
+  "Intended Audience :: Developers",
+  "Intended Audience :: Information Technology",
+  "Intended Audience :: System Administrators",
+  "Topic :: Internet",
+  "Topic :: Internet :: WWW/HTTP :: HTTP Servers",
+  "Topic :: Software Development :: Libraries :: Application Frameworks",
+  "Topic :: Software Development :: Libraries :: Python Modules",
 ]
 dependencies = [
     "edgy>=0.9.2",
@@ -21,6 +44,21 @@ license = {text = "MIT"}
 shell = [
     "ptpython>=3.0.25",
 ]
+mail = [
+    "aiosmtplib>=3.0.1",
+    "dnspython>=2.6.1",
+    "email-validator>=2.1.1",
+    "redis>=5.0.3",
+    "blinker>=1.7.0",
+]
+testing = ["edgy[testing]", "litestar[test]"]
+all = [
+    "edgy[postgres,mysql,sqlite,testing]",
+    "fimbu[mail]",
+    "fimbu[shell]",
+    "litestar[annotated-types,attrs,brotli,cli,cryptography,jinja,jwt,mako,minijinja,opentelemetry,prometheus,pydantic,redis,sqlalchemy,standard,structlog]",
+]
+
 [build-system]
 requires = ["pdm-backend"]
 build-backend = "pdm.backend"
