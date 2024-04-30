@@ -5,21 +5,24 @@ from litestar.static_files.config import StaticFilesConfig
 from litestar.middleware.compression import CompressionMiddleware
 from litestar.types import Scopes, Method
 
+
+########## ------------------------------- FIMBU - PROJECT --------------------------------- ##########
+
 BASE_DIR = Path.cwd()
-
-
 SECRET = 'fimbu_secret_key'
-
 DEBUG = True
+OYA_VERSION = '0.0.1'
+APP_NAME = "fimbu"
+LANGUAGE_CODE = 'en-us'
+TIME_ZONE = 'UTC'
+USE_I18N = True
+USE_TZ = True
 
 INSTALLED_APPS = []
 
 MIDDLEWARE = []
 
 MIDDLEWARE_FROM_FACTORY_BEFORE = False
-
-ROOT_URLCONF = 'api.urls'
-
 
 ASGI_APPLICATION = 'fimbu.apps.main:app'
 
@@ -39,11 +42,6 @@ TEMPLATES = {
     'DIRS' : ['templates'],
     'ENGINE' : JinjaTemplateEngine,
 }
-
-# TEMPLATES = TemplateConfig(
-#         directory=Path("templates"),
-#         engine=JinjaTemplateEngine,
-#     )
 
 
 # Static files
@@ -65,38 +63,10 @@ STATIC_FILES = [
     ),
 ]
 
-# Internationalization
-# https://docs.djangoproject.com/en/{{ docs_version }}/topics/i18n/
-
-LANGUAGE_CODE = 'en-us'
-
-TIME_ZONE = 'UTC'
-
-USE_I18N = True
-
-USE_TZ = True
-
 
 APP_MIGRATIONS_FOLDER = 'migrations'
 
-MIGRATIONS_PER_APP = False # experimental
-
 MIGRATIONS_LOCATION = BASE_DIR / APP_MIGRATIONS_FOLDER
-
-
-
-TEST_RUNNER = 'oya.test.runner.DiscoverRunner'
-
-########### ------------------------------ UVICORN ---------------------------------- ##########
-
-UVICORN_PORT = 8080
-UVICORN_LOG_LEVEL = 'info'
-
-
-
-########## ------------------------------- OYA ------------------------------------ ##########
-OYA_VERSION = '0.0.1'
-APP_NAME = "fimbu"
 
 
 ####### -------------------------------- ALLOWED HOSTS CONFIG --------------------- #########
@@ -152,39 +122,13 @@ RESPONSE_CACHE_DEFAULT_EXPIRATION: int | None= 60
 RESPONSE_CACHE_STORE_NAME: str = 'response_cache'
 
 
+#### --------------------------------- EMAIL CONFIG ------------------------------- ###########
 
-DEBUG = False
-INSTALLED_APPS = ()
-
-# Default charset to use for all HttpResponse objects, if a MIME type isn't
-# manually specified. It's used to construct the Content-Type header.
-DEFAULT_CHARSET = "utf-8"
-
-# Email address that error messages come from.
 SERVER_EMAIL = "root@localhost"
-
-# Database connection info. If left empty, will default to the dummy backend.
-DATABASES = {}
-
-# Classes used to implement DB routing behavior.
-DATABASE_ROUTERS = []
-
-# The email backend to use. For possible shortcuts see django.core.mail.
-# The default is to use the SMTP backend.
-# Third-party backends can be specified by providing a Python path
-# to a module that defines an EmailBackend class.
 EMAIL_BACKEND = "django.core.mail.backends.smtp.EmailBackend"
-
-# Host for sending email.
 EMAIL_HOST = "localhost"
-
-# Port for sending email.
 EMAIL_PORT = 25
-
-# Whether to send SMTP 'Date' header in the local time zone or in UTC.
 EMAIL_USE_LOCALTIME = False
-
-# Optional SMTP authentication information for EMAIL_HOST.
 EMAIL_HOST_USER = ""
 EMAIL_HOST_PASSWORD = ""
 EMAIL_USE_TLS = False
@@ -192,27 +136,19 @@ EMAIL_USE_SSL = False
 EMAIL_SSL_CERTFILE = None
 EMAIL_SSL_KEYFILE = None
 EMAIL_TIMEOUT = None
-
-# List of strings representing installed apps.
-INSTALLED_APPS = []
-
-TEMPLATES = []
-
-LANGUAGE_CODE = 'en-us'
-
-TIME_ZONE = 'UTC'
-
-USE_I18N = True
-
-USE_TZ = True
-
-# Default form rendering class.
-FORM_RENDERER = "django.forms.renderers.DjangoTemplates"
-
-# Default email address to use for various automated correspondence from
-# the site managers.
 DEFAULT_FROM_EMAIL = "webmaster@localhost"
+EMAIL_SUBJECT_PREFIX = "[Fimbu ] "
 
-# Subject-line prefix for email messages send with django.core.mail.mail_admins
-# or ...mail_managers.  Make sure to include the trailing space.
-EMAIL_SUBJECT_PREFIX = "[Oya] "
+
+#### -------------------------------------- AUTHENTICATION ---------------------------- ###########
+
+AUTH_PLUGIN = 'fimbu.contrib.auth.plugins.BearerAuthentication'
+AUTH_BACKEND = 'fimbu.contrib.auth.backends.AuthenticationBackend'
+USER_MODEL = 'fimbu.contrib.auth.models.User'
+USER_READ_DTO = 'fimbu.contrib.auth.dtos.UserReadDTO'
+USER_REGISTRATION_DTO = 'fimbu.contrib.auth.dtos.UserRegistrationDTO'
+USER_UPDATE_DTO = 'fimbu.contrib.auth.dtos.UserUpdateDTO'
+USER_SERVICE = 'fimbu.contrib.auth.service.UserService'
+AUTH_HANDLER_CONFIG = 'fimbu.contrib.auth.configs.AuthHandlerConfig'
+REGISTRATION_HANDLER_CONFIG = 'fimbu.contrib.auth.configs.RegistrationHandlerConfig'
+VERIFICATION_HANDLER_CONFIG = 'fimbu.contrib.auth.configs.VerificationHandlerConfig'

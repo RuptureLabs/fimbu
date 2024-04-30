@@ -41,3 +41,7 @@ __all__ = [
 
 class DatabaseNotFound(FimbuException):
     pass
+
+
+class RepositoryError(FimbuException):
+    """Base repository exception type."""

@@ -29,12 +29,14 @@ classifiers = [
   "Topic :: Software Development :: Libraries :: Python Modules",
 ]
 dependencies = [
-    "edgy>=0.9.2",
-    "litestar[standard]>=2.5.5",
-    "black>=24.1.1",
-    "rich-click>=1.7.3",
+    "edgy>=0.10.1",
+    "litestar[standard]>=2.8.2",
+    "black>=24.4.2",
+    "rich-click>=1.8.0",
     "cryptography>=42.0.5",
     "aiosqlite>=0.20.0",
+    "python-jose>=3.3.0",
+    "passlib>=1.7.4",
 ]
 requires-python = ">=3.10"
 readme = "README.md"
@@ -42,14 +44,14 @@ license = {text = "MIT"}
 
 [project.optional-dependencies]
 shell = [
-    "ptpython>=3.0.25",
+    "ptpython>=3.0.26",
 ]
 mail = [
     "aiosmtplib>=3.0.1",
     "dnspython>=2.6.1",
     "email-validator>=2.1.1",
-    "redis>=5.0.3",
-    "blinker>=1.7.0",
+    "redis>=5.0.4",
+    "blinker>=1.8.1",
 ]
 testing = ["edgy[testing]", "litestar[test]"]
 all = [

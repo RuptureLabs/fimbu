@@ -4,7 +4,6 @@ Expose the Application ASGI Factory
 
 from typing import Any, List, Sequence, Union
 from collections.abc import Callable
-from pathlib import Path
 from litestar.datastructures.response_header import ResponseHeader
 from litestar.logging import LoggingConfig
 from litestar.static_files.config import StaticFilesConfig
@@ -347,8 +346,8 @@ class Application:
 
             elif is_list:
                 _l: List = getattr(cls, attr_name)
-                if not isinstance(value, list) or not isinstance(_d, list):
-                    raise ValueError(f"is_dict is True, '{attr_name}' value must be a dict")
+                if not isinstance(value, list) or not isinstance(_l, list):
+                    raise ValueError(f"is_list is True, '{attr_name}' value must be a list")
 
                 _l.extend(value)
 
