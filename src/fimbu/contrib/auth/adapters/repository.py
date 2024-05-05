@@ -1,7 +1,6 @@
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Any, Generic
-
+from typing import TYPE_CHECKING, Any, Generic, Collection
 from fimbu.core.exceptions import ImproperlyConfigured
 from fimbu.contrib.auth.adapters.protocols import RoleT, UserT
 from fimbu.db.repository import Repository
@@ -20,7 +19,7 @@ class UserRepository(Repository[UserT], Generic[UserT]):
             model_type: A subclass of `UserModel`.
         """
         self.model_type = model_type
-        super().__init__()
+        super().__init__(self.model_type)
 
 
     async def _update(self, user: UserT, data: dict[str, Any]) -> UserT:
@@ -28,6 +27,9 @@ class UserRepository(Repository[UserT], Generic[UserT]):
             setattr(user, key, value)
 
         return user
+    
+    def filter_collection_by_kwargs(self, collection: Collection[UserT], /, **kwargs: Any) -> Collection[UserT]:
+        return super().filter_collection_by_kwargs(collection, **kwargs)
 
 
 class RoleRepository(Repository[RoleT], Generic[RoleT, UserT]):
@@ -40,7 +42,10 @@ class RoleRepository(Repository[RoleT], Generic[RoleT, UserT]):
             model_type: A subclass of `SQLAlchemyRoleModel`.
         """
         self.model_type = model_type
-        super().__init__()
+        super().__init__(self.model_type)
+
+    def filter_collection_by_kwargs(self, collection: Collection[UserT], /, **kwargs: Any) -> Collection[UserT]:
+        return super().filter_collection_by_kwargs(collection, **kwargs)
 
 
     async def assign_role(self, user: UserT, role: RoleT) -> UserT:

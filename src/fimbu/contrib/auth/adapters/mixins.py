@@ -5,8 +5,8 @@ from typing import TypeVar
 from fimbu.db import Model, fields
 
 __all__ = [
-    "SQLAlchemyRoleMixin",
-    "SQLAlchemyUserMixin",
+    "BaseUserMixin",
+    "BaseRoleMixin",
     "UserModelType",
     "RoleModelType",
 ]

@@ -1,6 +1,5 @@
-from dataclasses import dataclass
 from uuid import UUID
-from pydantic import BaseModel
+from pydantic import BaseModel, EmailStr
 
 __all__ = [
     "ForgotPasswordSchema",
@@ -10,36 +9,47 @@ __all__ = [
 ]
 
 
-@dataclass
-class AuthenticationSchema:
+class AuthenticationSchema(BaseModel):
     """User authentication schema."""
 
-    email: str
+    email: EmailStr
     password: str
 
 
-@dataclass
-class ForgotPasswordSchema:
+class ForgotPasswordSchema(BaseModel):
     """Forgot password schema."""
+    email: EmailStr
 
-    email: str
 
 class UserRegistrationSchema(BaseModel):
     """User registration schema"""
-    email : str
+    email : EmailStr
     password : str
 
 
-@dataclass
-class ResetPasswordSchema:
+class UserSchema(BaseModel):
+    """User schema."""
+    id: UUID
+    email: str
+    password_hash: str
+    is_active: bool
+    is_verified: bool
+
+
+class ResetPasswordSchema(BaseModel):
     """Reset password schema."""
 
     token: str
     password: str
 
 
-@dataclass
-class UserRoleSchema:
+class RoleSchema(BaseModel):
+    id: UUID
+    name: str
+    description: str
+
+
+class UserRoleSchema(BaseModel):
     """User role association schema."""
 
     user_id: UUID

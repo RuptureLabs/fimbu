@@ -4,9 +4,10 @@ import sys
 from typing import TYPE_CHECKING, cast
 
 import anyio
+from fimbu.core.utils import get_pydantic_fields
 from fimbu.db.exceptions import DuplicateRecordError, ObjectNotFound
 from click import echo, group, option, prompt
-from litestar.cli._utils import LitestarGroup
+from fimbu.cli._utils import FimbuGroup
 
 from fimbu.contrib.auth.utils import get_auth_plugin, get_user_service
 
@@ -14,7 +15,7 @@ if TYPE_CHECKING:
     from litestar import Litestar
 
 
-@group(cls=LitestarGroup, name="users")
+@group(cls=FimbuGroup, name="users")
 def user_management_group() -> None:
     """Manage users."""
 
@@ -24,63 +25,36 @@ def user_management_group() -> None:
     help="Create a new user in the database.",
     context_settings={"ignore_unknown_options": True, "allow_extra_args": True},
 )
-@option("--email", help="The user's email address.")
-@option("--password", help="The new user's login password.")
-@option("--is-active", is_flag=True, default=False, type=bool, help="Set the user as active.")
-@option("--is-verified", is_flag=True, default=False, type=bool, help="Set the user as verified.")
-@option("--id", "id_", help="Set the user ID.")
-@option(
-    "--bool-attrs", "-b", "booleans", multiple=True, help="Set one or more custom boolean attribute key-value pairs."
-)
-@option("--float-attrs", "-f", "floats", multiple=True, help="Set one or more custom float attribute key-value pairs.")
-@option(
-    "--int-attrs", "-i", "integers", multiple=True, help="Set one or more custom integer attribute key-value pairs."
-)
-@option("--str-attrs", "-s", "strings", multiple=True, help="Set one or more custom string attribute key-value pairs.")
 def create_user(
     app: Litestar,
-    email: str,
-    password: str,
-    is_active: bool,
-    is_verified: bool,
-    id_: str | None,
-    booleans: tuple[str],
-    integers: tuple[str],
-    floats: tuple[str],
-    strings: tuple[str],
 ) -> None:
     """Create a new user in the database."""
     kwargs: dict[str, str | int | float | bool] = {}
-    try:
-        kwargs.update(
-            {
-                key: value.lower() in ("1", "true", "t", "yes", "y")
-                for arg in booleans
-                for key, value in [arg.split("=")]
-            }
-        )
-        kwargs.update({key: int(value) for arg in integers for key, value in [arg.split("=")]})
-        kwargs.update({key: float(value) for arg in floats for key, value in [arg.split("=")]})
-        kwargs.update({key: value for arg in strings for key, value in [arg.split("=")]})
-    except ValueError as e:
-        echo(f"Error: {e}", err=True)
-        sys.exit(1)
-    if id_:
-        kwargs["id"] = int(id_) if id_.isnumeric() else id_
-
+    
     auth_config = get_auth_plugin(app)._config
 
-    email = email or prompt("User email")
-    password = password or prompt("User password", hide_input=True, confirmation_prompt=True)
+    req, _ = get_pydantic_fields(auth_config.user_model)
+
+    for name in req:
+        is_pwd = name == "password_hash"
+        kwargs[name] = prompt(
+            f"User {name}" if not is_pwd else "User password",
+            hide_input=is_pwd,
+            confirmation_prompt=is_pwd,
+        )
+
+
 
     async def _create_user() -> None:
         user_service = get_user_service(app)
-        password_hash = user_service.password_manager.hash(password)
+        if 'password_hash' in kwargs:
+            kwargs['password_hash'] = user_service.password_manager.hash(kwargs['password_hash'])
+        
         try:
             user = await user_service.add_user(
-                user=auth_config.user_model(email=email, password_hash=password_hash, **kwargs),
-                activate=is_active,
-                verify=is_verified,
+                user=auth_config.user_model(**kwargs),
+                activate=True,
+                verify=False,
             )
             echo(f"User {user.id} created successfully.")
         except DuplicateRecordError as e:

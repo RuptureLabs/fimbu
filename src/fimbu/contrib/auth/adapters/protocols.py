@@ -7,9 +7,10 @@ if TYPE_CHECKING:
 
 __all__ = ["RoleProtocol", "UserProtocol"]
 
+_O = TypeVar('_O', bound=object)
 
 @runtime_checkable
-class RoleProtocol(Protocol):
+class RoleProtocol(Protocol[_O]):
     """The base role type."""
 
     id: UUID
@@ -18,7 +19,7 @@ class RoleProtocol(Protocol):
 
 
 @runtime_checkable
-class UserProtocol(Protocol):
+class UserProtocol(Protocol[_O]):
     """The base user type."""
 
     id: UUID

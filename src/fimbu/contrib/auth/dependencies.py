@@ -1,18 +1,15 @@
 from __future__ import annotations
 
-from typing import TYPE_CHECKING
-
 from fimbu.contrib.auth.adapters.repository import RoleRepository
 from fimbu.contrib.auth.utils import get_auth_plugin
 
 __all__ = ["provide_user_service"]
 
 
-if TYPE_CHECKING:
-    from litestar import Request
-    from litestar.datastructures import State
+from litestar import Request
+from litestar.datastructures import State
 
-    from fimbu.contrib.auth.service import BaseUserService
+from fimbu.contrib.auth.service import BaseUserService
 
 
 def provide_user_service(state: State, request: Request) -> BaseUserService:
@@ -23,13 +20,11 @@ def provide_user_service(state: State, request: Request) -> BaseUserService:
         state: The application.state instance
     """
     auth_config = get_auth_plugin(request.app)._config
-    user_repository = auth_config.user_repository_class(
-        model_type=auth_config.user_model
-    )
+    user_repository = auth_config.user_repository_class(auth_config.user_model)
     role_repository: RoleRepository | None = (
         None
         if auth_config.role_model is None
-        else RoleRepository(model_type=auth_config.role_model)
+        else RoleRepository(auth_config.role_model)
     )
 
     return auth_config.user_service_class(

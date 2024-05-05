@@ -1,6 +1,5 @@
 from typing import Any, Generic
 from edgy import ObjectNotFound
-from edgy import Manager
 from litestar.repository.abc import AbstractAsyncRepository
 from litestar.repository.filters import FilterTypes
 from fimbu.core.types import ModelT, T
@@ -42,7 +41,7 @@ class Repository(AbstractAsyncRepository[ModelT], Generic[ModelT]):
         """
         return await self.model_type.query.filter(**kwargs).count()
     
-    async def delete(self, item_id: Any) -> T:
+    async def delete(self, item_id: Any) -> ModelT:
         """Delete instance identified by ``item_id``.
 
         Args:
@@ -54,10 +53,12 @@ class Repository(AbstractAsyncRepository[ModelT], Generic[ModelT]):
         Raises:
             ObjectNotFound: If no instance found identified by ``item_id``.
         """
-        return await self.model_type.query.get(**{self.id_attribute: item_id}).delete()
+        instance: ModelT = await self.model_type.query.get(**{self.id_attribute: item_id})
+        await instance.delete()
+        return instance
 
 
-    async def delete_many(self, item_ids: list[Any]) -> list[T]:
+    async def delete_many(self, item_ids: list[Any]) -> list[ModelT]:
         """Delete multiple instances identified by list of IDs ``item_ids``.
 
         Args:
@@ -66,7 +67,9 @@ class Repository(AbstractAsyncRepository[ModelT], Generic[ModelT]):
         Returns:
             The deleted instances.
         """
-        return await self.model_type.query.filter(**{f"{self.id_attribute}__in": item_ids}).delete()
+        instances: list[ModelT] = await self.model_type.query.filter(**{f"{self.id_attribute}__in": item_ids})
+        await self.model_type.query.filter(**{f"{self.id_attribute}__in": item_ids}).delete()
+        return instances
 
 
     async def exists(self, *filters: Any, **kwargs: Any) -> bool:
@@ -80,14 +83,11 @@ class Repository(AbstractAsyncRepository[ModelT], Generic[ModelT]):
             True if the instance was found.  False if not found.
 
         """
-        try:
-            await self.get_one(**kwargs)
-            return True
-        except ObjectNotFound:
-            return False
+        
+        return self.model_type.query.exists(**kwargs)
 
 
-    async def get(self, item_id: Any, **kwargs: Any) -> T:
+    async def get(self, item_id: Any, **kwargs: Any) -> ModelT:
         """Get instance identified by ``item_id``.
 
         Args:
@@ -104,7 +104,7 @@ class Repository(AbstractAsyncRepository[ModelT], Generic[ModelT]):
         return await self.model_type.query.get(**kwargs)
 
 
-    async def get_one(self, **kwargs: Any) -> T:
+    async def get_one(self, **kwargs: Any) -> ModelT:
         """Get an instance specified by the ``kwargs`` filters if it exists.
 
         Args:
@@ -116,14 +116,14 @@ class Repository(AbstractAsyncRepository[ModelT], Generic[ModelT]):
         Raises:
             ObjectNotFound: If no instance found identified by ``kwargs``.
         """
-        return await self.model_type.filter(**kwargs).first()
+        return await self.model_type.query.get(**kwargs)
 
 
-    async def get_or_create(self, **kwargs: Any) -> tuple[T, bool]:
+    async def get_or_create(self, **kwargs: Any) -> tuple[ModelT, bool]:
         """Get an instance specified by the ``kwargs`` filters if it exists or create it.
 
         Args:
-            **kwargs: Instance attribute value filters.
+            **kwargs: Instance attribute value filters. kwargs must inlcude the defaults map.
 
         Returns:
             A tuple that includes the retrieved or created instance, and a boolean on whether the record was created or not
@@ -131,7 +131,7 @@ class Repository(AbstractAsyncRepository[ModelT], Generic[ModelT]):
         return await self.model_type.query.get_or_create(**kwargs)
     
 
-    async def get_one_or_none(self, **kwargs: Any) -> T | None:
+    async def get_one_or_none(self, **kwargs: Any) -> ModelT | None:
         """Get an instance if it exists or None.
 
         Args:
@@ -146,7 +146,7 @@ class Repository(AbstractAsyncRepository[ModelT], Generic[ModelT]):
             return None
 
 
-    async def update(self, data: ModelT, **kwargs: Any) -> T:
+    async def update(self, data: ModelT, **kwargs: Any) -> ModelT:
         """Update instance with the attribute values present on ``data``.
 
         Args:
@@ -159,7 +159,7 @@ class Repository(AbstractAsyncRepository[ModelT], Generic[ModelT]):
         return await data.update(**kwargs)
 
 
-    async def update_many(self, data: list[T]) -> list[T]:
+    async def update_many(self, data: list[ModelT]) -> list[ModelT]:
         """Update multiple instances with the attribute values present on instances in ``data``.
 
         Args:
@@ -175,7 +175,7 @@ class Repository(AbstractAsyncRepository[ModelT], Generic[ModelT]):
         return await self.model_type.query.bulk_update(data)
     
 
-    async def upsert(self, **kwargs: Any) -> T:
+    async def upsert(self, **kwargs: Any) -> ModelT:
         """Update or create instance.
 
         Updates instance with the attribute values present on ``data``, or creates a new instance if
@@ -196,7 +196,7 @@ class Repository(AbstractAsyncRepository[ModelT], Generic[ModelT]):
         return await self.model_type.query.update_or_create(kwargs)
     
 
-    async def upsert_many(self, data: list[T]) -> list[T]:
+    async def upsert_many(self, data: list[ModelT]) -> list[ModelT]:
         """Update or create multiple instances.
 
         Update instances with the attribute values present on ``data``, or create a new instance if
@@ -215,7 +215,7 @@ class Repository(AbstractAsyncRepository[ModelT], Generic[ModelT]):
         """
 
 
-    async def list_and_count(self, *filters: FilterTypes, **kwargs: Any) -> tuple[list[T], int]:
+    async def list_and_count(self, *filters: FilterTypes, **kwargs: Any) -> tuple[list[ModelT], int]:
         """List records with total count.
 
         Args:
@@ -227,7 +227,7 @@ class Repository(AbstractAsyncRepository[ModelT], Generic[ModelT]):
         """
 
     
-    async def list(self, *filters: Any, **kwargs: Any) -> list[T]:
+    async def list(self, *filters: Any, **kwargs: Any) -> list[ModelT]:
         """Get a list of instances, optionally filtered.
 
         Args:
@@ -241,7 +241,7 @@ class Repository(AbstractAsyncRepository[ModelT], Generic[ModelT]):
 
 
     @staticmethod
-    def check_not_found(item_or_none: T | None) -> T:
+    def check_not_found(item_or_none: ModelT | None) -> T:
         """Raise :class:`NotFoundError` if ``item_or_none`` is ``None``.
 
         Args:
@@ -256,7 +256,7 @@ class Repository(AbstractAsyncRepository[ModelT], Generic[ModelT]):
 
 
     @classmethod
-    def get_id_attribute_value(cls, item: T | type[T], id_attribute: str | None = None) -> Any:
+    def get_id_attribute_value(cls, item: ModelT | type[ModelT], id_attribute: str | None = None) -> Any:
         """Get value of attribute named as :attr:`id_attribute <AbstractAsyncRepository.id_attribute>` on ``item``.
 
         Args:

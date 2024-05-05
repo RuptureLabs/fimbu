@@ -1,25 +1,15 @@
 from __future__ import annotations
 
-import importlib
 import inspect
-import os
 import sys
-from dataclasses import dataclass
 from functools import wraps
-from importlib.util import find_spec
-from itertools import chain
-from os import getenv
-from pathlib import Path
-from typing import TYPE_CHECKING, Any, Callable, Generator, Iterable, Sequence, TypeVar, cast
+from typing import TYPE_CHECKING, Any, Callable, Iterable, Sequence, TypeVar, cast
 
-from click import ClickException, Command, Context, Group, pass_context
+from click import Command, Context, Group, pass_context
 from rich import get_console
-from rich.table import Table
-from typing_extensions import ParamSpec, get_type_hints
+from typing_extensions import ParamSpec
 
-from litestar import Litestar, __version__
-from litestar.middleware import DefineMiddleware
-from litestar.utils import get_name
+from litestar import __version__
 from litestar.cli._utils import (
     LitestarCLIException,
 )
@@ -35,9 +25,6 @@ else:
 
 if TYPE_CHECKING:
     from litestar.types import AnyCallable
-
-
-
 
 
 __all__ = (
@@ -125,7 +112,13 @@ class FimbuExtensionGroup(FimbuGroup):
             env: FimbuEnv | None = ctx.obj
         else:
             try:
-                env = ctx.obj = FimbuEnv.from_env(ctx.params.get("app_path"), ctx.params.get("app_dir"))
+                app_path = ctx.params.get("app_path")
+                app_dir = ctx.params.get("app_dir")
+                if not app_path:
+                    from fimbu.conf import settings
+                    app_path = settings.ASGI_APPLICATION
+                
+                env = ctx.obj = FimbuEnv.from_env(app_path, app_dir)
             except LitestarCLIException:
                 env = None
 

@@ -142,13 +142,23 @@ EMAIL_SUBJECT_PREFIX = "[Fimbu ] "
 
 #### -------------------------------------- AUTHENTICATION ---------------------------- ###########
 
-AUTH_PLUGIN = 'fimbu.contrib.auth.plugins.BearerAuthentication'
-AUTH_BACKEND = 'fimbu.contrib.auth.backends.AuthenticationBackend'
+AUTH_BACKEND_CLASS = 'litestar.security.session_auth.SessionAuth'
+SESSION_BACKEND_CONFIG = 'litestar.middleware.session.server_side.ServerSideSessionConfig'
 USER_MODEL = 'fimbu.contrib.auth.models.User'
-USER_READ_DTO = 'fimbu.contrib.auth.dtos.UserReadDTO'
-USER_REGISTRATION_DTO = 'fimbu.contrib.auth.dtos.UserRegistrationDTO'
-USER_UPDATE_DTO = 'fimbu.contrib.auth.dtos.UserUpdateDTO'
-USER_SERVICE = 'fimbu.contrib.auth.service.UserService'
-AUTH_HANDLER_CONFIG = 'fimbu.contrib.auth.configs.AuthHandlerConfig'
-REGISTRATION_HANDLER_CONFIG = 'fimbu.contrib.auth.configs.RegistrationHandlerConfig'
-VERIFICATION_HANDLER_CONFIG = 'fimbu.contrib.auth.configs.VerificationHandlerConfig'
+ROLE_MODEL =  'fimbu.contrib.auth.models.Role'
+USER_READ_DTO = 'fimbu.contrib.auth.dto.UserReadDTO'
+USER_REGISTRATION_DTO = 'fimbu.contrib.auth.dto.UserRegistrationDTO'
+USER_UPDATE_DTO = 'fimbu.contrib.auth.dto.UserUpdateDTO'
+ROLE_CREATE_DTO = 'fimbu.contrib.auth.dto.RoleCreateDTO'
+ROLE_READ_DTO = 'fimbu.contrib.auth.dto.RoleReadDTO'
+ROLE_UPDATE_DTO = 'fimbu.contrib.auth.dto.RoleUpdateDTO'
+HASH_SCHEMES = ["argon2"]
+AUTH_GUARDS = []
+AUTH_TAGS = []
+AUTH_PREFIX = "/auth"
+AUTH_UUID_IDENTIFIERS =  "/{id_:uuid}"
+AUTH_EXCLUDE_PATHS = []
+USER_SERVICE_CLASS = 'fimbu.contrib.auth.service.BaseUserService'
+USERS_REPOSITORY = 'fimbu.contrib.auth.adapters.repository.UserRepository'
+ROLE_REPOSITORY = 'fimbu.contrib.auth.adapters.repository.RoleRepository'
+
