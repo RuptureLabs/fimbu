@@ -7,23 +7,24 @@ from uuid import UUID
 from jose import JWTError
 from litestar.contrib.jwt.jwt_token import Token
 from litestar.exceptions import ImproperlyConfiguredException
-from fimbu.contrib.auth.adapters.protocols import RoleT, UserT
+from fimbu.contrib.auth.protocols import RoleT, UserT, UserRoleT
 from fimbu.contrib.auth.exceptions import InvalidTokenException
-from fimbu.contrib.auth.password import PasswordManager
+from fimbu.utils.crypto import PasswordManager
+from fimbu.db import ResultConverter
 
 from fimbu.db.exceptions import DuplicateRecordError, ObjectNotFound
 
-__all__ = ["BaseUserService"]
+__all__ = ["BaseUserService", "UserService"]
 
 
 if TYPE_CHECKING:
     from litestar import Request
 
-    from fimbu.contrib.auth.adapters.repository import RoleRepository, UserRepository
-    from fimbu.contrib.auth.schema import AuthenticationSchema
+    from fimbu.contrib.auth.repository import RoleRepository, UserRepository, UserRoleRepository
+    from fimbu.contrib.auth.schemas import AccountLogin
 
 
-class BaseUserService(Generic[UserT, RoleT]):  # pylint: disable=R0904
+class BaseUserService(Generic[UserT, RoleT, UserRoleT], ResultConverter):  # pylint: disable=R0904
     """Main user management interface."""
 
     user_model: type[UserT]
@@ -35,6 +36,7 @@ class BaseUserService(Generic[UserT, RoleT]):  # pylint: disable=R0904
         secret: str,
         hash_schemes: Sequence[str] | None = None,
         role_repository: RoleRepository[RoleT, UserT] | None = None,
+        user_role_repository: UserRoleRepository[UserRoleT] | None = None,
     ) -> None:
         """User service constructor.
 
@@ -46,6 +48,7 @@ class BaseUserService(Generic[UserT, RoleT]):  # pylint: disable=R0904
         """
         self.user_repository = user_repository
         self.role_repository = role_repository
+        self.user_role_repository = user_role_repository
         self.secret = secret
         self.password_manager = PasswordManager(hash_schemes=hash_schemes)
         self.user_model = self.user_repository.model_type
@@ -94,6 +97,11 @@ class BaseUserService(Generic[UserT, RoleT]):  # pylint: disable=R0904
             id_: UUID corresponding to a user primary key.
         """
         return await self.user_repository.get(id_)
+    
+    
+    async def get_all_users(self) -> list[UserT]:
+        """Retrieve all users from the database."""
+        return await self.user_repository.list()
 
     async def get_user_by(self, **kwargs: Any) -> UserT | None:
         """Retrieve a user from the database by arbitrary keyword arguments.
@@ -126,7 +134,7 @@ class BaseUserService(Generic[UserT, RoleT]):  # pylint: disable=R0904
         """
         return await self.user_repository.delete(id_)
 
-    async def authenticate(self, data: AuthenticationSchema, request: Request | None = None) -> UserT | None:
+    async def authenticate(self, data: AccountLogin, request: Request | None = None) -> UserT | None:
         """Authenticate a user.
 
         Args:
@@ -258,7 +266,7 @@ class BaseUserService(Generic[UserT, RoleT]):  # pylint: disable=R0904
             raise InvalidTokenException from e
 
     async def pre_login_hook(
-        self, data: AuthenticationSchema, request: Request | None = None
+        self, data: AccountLogin, request: Request | None = None
     ) -> bool:  # pylint: disable=W0613
         """Execute custom logic to run custom business logic prior to authenticating a user.
 
@@ -405,6 +413,12 @@ class BaseUserService(Generic[UserT, RoleT]):  # pylint: disable=R0904
             raise ImproperlyConfiguredException("roles have not been configured")
         return await self.role_repository.delete(id_)
 
+
+    async def get_user_role(self, user_id: "UUID", role_id: "UUID") -> UserRoleT:
+        if self.user_role_repository is None:
+            raise ImproperlyConfiguredException("user roles have not been configured")
+        return await self.user_role_repository.get(user_id, role_id)
+    
     async def assign_role(self, user_id: "UUID", role_id: "UUID") -> UserT:
         """Add a role to a user.
 
@@ -412,17 +426,17 @@ class BaseUserService(Generic[UserT, RoleT]):  # pylint: disable=R0904
             user_id: UUID of the user to receive the role.
             role_id: UUID of the role to add to the user.
         """
-        if self.role_repository is None:
+        if self.user_role_repository is None:
             raise ImproperlyConfiguredException("roles have not been configured")
         user = await self.get_user(user_id)
         role = await self.get_role(role_id)
 
-        if not hasattr(user, "roles"):
-            raise ImproperlyConfiguredException("roles have not been configured")
+        # if not hasattr(user, "roles"):
+        #     raise ImproperlyConfiguredException("roles have not been configured")
 
-        if isinstance(user.roles, list) and role in user.roles:  # pyright: ignore
-            raise DuplicateRecordError(f"user already has role '{role.name}'")
-        return await self.role_repository.assign_role(user, role)
+        # if isinstance(user.roles, list) and role in user.roles:  # pyright: ignore
+        #     raise DuplicateRecordError(f"user already has role '{role.name}'")
+        return await self.user_role_repository.assign_role(user, role)
 
     async def revoke_role(self, user_id: "UUID", role_id: "UUID") -> UserT:
         """Revoke a role from a user.
@@ -445,3 +459,7 @@ class BaseUserService(Generic[UserT, RoleT]):  # pylint: disable=R0904
 
 
 UserServiceType = TypeVar("UserServiceType", bound=BaseUserService)
+
+
+class UserService(BaseUserService[UserT, RoleT], Generic[UserT, RoleT]):
+    """Fimbu user service."""

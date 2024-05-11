@@ -16,7 +16,7 @@ from edgy.exceptions import (
     ModelReferenceError,
     SchemaError,
     RelationshipNotFound,
-    CommandEnvironmentError
+    CommandEnvironmentError,
 )
 
 from fimbu.core.exceptions import FimbuException

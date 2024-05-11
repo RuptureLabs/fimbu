@@ -157,8 +157,8 @@ AUTH_GUARDS = []
 AUTH_TAGS = []
 AUTH_PREFIX = "/auth"
 AUTH_UUID_IDENTIFIERS =  "/{id_:uuid}"
-AUTH_EXCLUDE_PATHS = []
+AUTH_EXCLUDE_PATHS = ['/schema',]
 USER_SERVICE_CLASS = 'fimbu.contrib.auth.service.BaseUserService'
 USERS_REPOSITORY = 'fimbu.contrib.auth.adapters.repository.UserRepository'
 ROLE_REPOSITORY = 'fimbu.contrib.auth.adapters.repository.RoleRepository'
-
+USER_DEFAULT_ROLE = "Application Access"

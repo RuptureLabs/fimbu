@@ -1,12 +1,91 @@
 """
 Oya's crypto functions and utilities.
 """
+from __future__ import annotations
+from typing import Sequence, cast
 import hashlib
 import hmac
 import secrets
+import base64
+import asyncio
 
 from fimbu.conf import settings
 from fimbu.utils.encoding import force_bytes
+from passlib.context import CryptContext
+
+
+
+__all__ = ["PasswordManager"]
+
+
+class PasswordManager:
+    """Thin wrapper around `passlib`."""
+
+    def __init__(self, hash_schemes: Sequence[str] | None = None) -> None:
+        """Construct a PasswordManager.
+
+        Args:
+            hash_schemes: The encryption schemes to use. Defaults to ["argon2"].
+        """
+        if hash_schemes is None:
+            hash_schemes = ["argon2"]
+        self.context = CryptContext(schemes=hash_schemes, deprecated="auto")
+
+    
+    @staticmethod
+    def get_encryption_key(secret: str) -> bytes:
+        """Get Encryption Key.
+
+        Args:
+            secret (str): Secret key used for encryption
+
+        Returns:
+            bytes: a URL safe encoded version of secret
+        """
+        if len(secret) <= 32:
+            secret = f"{secret:<32}"[:32]
+        return base64.urlsafe_b64encode(secret.encode())
+
+
+    async def get_password_hash(self, password: str | bytes) -> str:
+        """Get password hash.
+
+        Args:
+            password: Plain password
+        Returns:
+            str: Hashed password
+        """
+        return await asyncio.get_running_loop().run_in_executor(None, self.context.hash, password)
+
+
+    async def verify_password(self, plain_password: str | bytes, hashed_password: str) -> bool:
+        """Verify Password.
+
+        Args:
+            plain_password (str | bytes): The string or byte password
+            hashed_password (str): the hash of the password
+
+        Returns:
+            bool: True if password matches hash.
+        """
+        valid, _ = await asyncio.get_running_loop().run_in_executor(
+            None,
+            self.context.verify_and_update,
+            plain_password,
+            hashed_password,
+        )
+        return bool(valid)
+
+
+    def verify_and_update(self, password: str, password_hash: str | None) -> tuple[bool, str | None]:
+        """Verify a password and rehash it if the hash is deprecated.
+
+        Args:
+            password: The password to verify.
+            password_hash: The hash to verify against.
+        """
+        return cast("tuple[bool, str | None]", self.context.verify_and_update(password, password_hash))
+
 
 
 class InvalidAlgorithm(ValueError):

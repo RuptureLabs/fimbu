@@ -323,33 +323,25 @@ class Application:
     
 
     @classmethod
-    def set_config(cls, attr_name: str, value: Any, is_dict=False, is_list=False):
+    def set_config(cls, attr_name: str, value: Any):
         """
         Allow user to set up config attributes
         
         Args:
             attr_name: str
             value: Any
-            is_dict: bool = False
-            is_list: bool = False
         """
-        if is_dict and is_list:
-            raise ValueError('Application.set_config >> is_dict and is_list can\'t be True at same time.')
 
         if hasattr(cls, attr_name):
-            if is_dict:
-                _d: dict = getattr(cls, attr_name)
-                if not isinstance(value, dict) or not isinstance(_d, dict):
-                    raise ValueError(f"is_dict is True, '{attr_name}' value must be a dict")
+            attr = getattr(cls, attr_name)
+            if isinstance(attr, dict):
+                if not isinstance(value, dict):
+                    raise ValueError(f"'{attr_name}' value must be a dict")
+                
+                attr.update(value)
 
-                _d.update(value)
-
-            elif is_list:
-                _l: List = getattr(cls, attr_name)
-                if not isinstance(value, list) or not isinstance(_l, list):
-                    raise ValueError(f"is_list is True, '{attr_name}' value must be a list")
-
-                _l.extend(value)
+            elif isinstance(attr, list):
+                attr.extend(list(value))
 
             else: setattr(cls, attr_name, value)
 

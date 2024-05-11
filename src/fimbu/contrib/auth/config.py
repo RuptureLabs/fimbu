@@ -6,7 +6,7 @@ from typing import TYPE_CHECKING, Any, Generic
 from litestar.exceptions import ImproperlyConfiguredException
 from litestar.security.session_auth import SessionAuth
 
-from fimbu.contrib.auth.adapters.repository import UserRepository
+from fimbu.contrib.auth.repository import UserRepository
 from fimbu.contrib.auth.protocols import RoleT, UserT
 
 __all__ = [

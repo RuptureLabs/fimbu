@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from fimbu.contrib.auth.adapters.repository import RoleRepository
+from fimbu.contrib.auth.repository import RoleRepository
 from fimbu.contrib.auth.utils import get_auth_plugin
 
 __all__ = ["provide_user_service"]

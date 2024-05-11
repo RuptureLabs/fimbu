@@ -1,4 +1,5 @@
 from functools import lru_cache
+from copy import copy
 from fimbu.conf import settings
 from fimbu.core.exceptions import ImproperlyConfigured
 from fimbu.db import Database, Registry
@@ -10,6 +11,8 @@ def get_database(db_settings: dict) -> tuple[str, Database] | None:
     Create database connection
     """
     default_ports = {"postgres": 5432, "mysql": 3306, "mssql": 1433}
+    supported_backends = copy(Database.SUPPORTED_BACKENDS)
+    supported_backends.update({'postgresql+asyncpg' : 'databasez.backends.aiopg:PostgresBackend'})
 
     def get_backend_default_port(backend: str) -> int:
         for pb, port in default_ports.items():
@@ -20,7 +23,7 @@ def get_database(db_settings: dict) -> tuple[str, Database] | None:
     try:
         backend = db_settings["engine"]
 
-        if not backend in Database.SUPPORTED_BACKENDS:
+        if not backend in supported_backends:
             raise ValueError(f"Unsupported database backend '{db_settings['engine']}'")
         
         if backend == "sqlite":

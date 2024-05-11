@@ -1,32 +1,27 @@
 from __future__ import annotations
 
+from datetime import datetime
 from typing import TYPE_CHECKING, Any, Protocol, TypeVar, runtime_checkable
 
 if TYPE_CHECKING:
     from uuid import UUID
+    from fimbu.core.types import T
 
+__all__ = ["RoleProtocol", "UserProtocol", "UserRoleProtocol", "RoleT", "UserT", "UserRoleT"]
 
-__all__ = ["RoleModelProtocol", "UserModelProtocol", "UserRegisterT"]
-
-UserT = TypeVar("UserT", bound="UserModelProtocol")
-RoleT = TypeVar("RoleT", bound="RoleModelProtocol")
-UserRegisterT = TypeVar("UserRegisterT", bound="UserRegistrationProtocol")
 
 
 @runtime_checkable
-class RoleModelProtocol(Protocol):
+class RoleProtocol(Protocol[T]):
     """The base role type."""
 
     id: UUID
     name: str
     description: str
 
-    def __init__(self, *args: Any, **kwargs: Any) -> None:
-        ...
-
 
 @runtime_checkable
-class UserModelProtocol(Protocol):
+class UserProtocol(Protocol[T]):
     """The base user type."""
 
     id: UUID
@@ -34,15 +29,20 @@ class UserModelProtocol(Protocol):
     password_hash: str
     is_active: bool
     is_verified: bool
-    roles: list
 
-    def __init__(self, *args: Any, **kwargs: Any) -> None:
+    def __init__(*args: Any, **kwargs: Any) -> None:
         ...
 
 
 @runtime_checkable
-class UserRegistrationProtocol(Protocol):
-    """The minimum fields required on user registration/creation."""
+class UserRoleProtocol(Protocol):
+    """The base SQLAlchemy user type."""
 
-    email: str
-    password: str
+    role: RoleProtocol
+    user: UserProtocol
+    assigned_at: datetime
+
+
+RoleT = TypeVar("RoleT", bound="RoleProtocol")
+UserT = TypeVar("UserT", bound="UserProtocol")
+UserRoleT = TypeVar("UserRoleT", bound="UserRoleProtocol")

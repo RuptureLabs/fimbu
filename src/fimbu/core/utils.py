@@ -1,11 +1,28 @@
 from __future__ import annotations 
-from typing import TYPE_CHECKING, Tuple
+from typing import TYPE_CHECKING, Tuple, Any
 
 import configparser
 import os
+from litestar.exceptions import (
+    HTTPException,
+    InternalServerException,
+    NotFoundException,
+    PermissionDeniedException,
+)
+from fimbu.core.exceptions import (
+    ApplicationError,
+    AuthorizationError,
+    _HTTPConflictException,
+)
+from fimbu.db.exceptions import ObjectNotFound, DuplicateRecordError, RepositoryError
+from litestar.middleware.exceptions._debug_response import create_debug_response
+from litestar.middleware.exceptions.middleware import create_exception_response
 
 if TYPE_CHECKING:
     from pydantic import BaseModel, Field
+    from litestar.middleware.exceptions.middleware import ExceptionResponseContent
+    from litestar.connection import Request
+    from litestar.response import Response
 
 
 def load_init_settings() -> configparser.ConfigParser:
@@ -63,3 +80,30 @@ def get_pydantic_fields(model: BaseModel) -> Tuple[dict[str, Field], dict[str, F
         else:
             optionnal_fields[field_name] = field
     return required_fields, optionnal_fields
+
+
+def exception_to_http_response(
+    request: Request[Any, Any, Any],
+    exc: ApplicationError | RepositoryError,
+) -> Response[ExceptionResponseContent]:
+    """Transform repository exceptions to HTTP exceptions.
+
+    Args:
+        request: The request that experienced the exception.
+        exc: Exception raised during handling of the request.
+
+    Returns:
+        Exception response appropriate to the type of original exception.
+    """
+    http_exc: type[HTTPException]
+    if isinstance(exc, ObjectNotFound):
+        http_exc = NotFoundException
+    elif isinstance(exc, DuplicateRecordError | RepositoryError):
+        http_exc = _HTTPConflictException
+    elif isinstance(exc, AuthorizationError):
+        http_exc = PermissionDeniedException
+    else:
+        http_exc = InternalServerException
+    if request.app.debug and http_exc not in (PermissionDeniedException, ObjectNotFound, AuthorizationError):
+        return create_debug_response(request, exc)
+    return create_exception_response(request, http_exc(detail=str(exc.__cause__)))

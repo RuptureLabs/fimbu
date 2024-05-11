@@ -38,6 +38,12 @@ from edgy.core.signals import Signal
 from edgy.core.utils.sync import run_sync
 from edgy.exceptions import MultipleObjectsReturned, ObjectNotFound
 from .utils import get_db_connection, get_db_registry, get_database, database_registry
+from fimbu.db._converters import to_schema, EMPTY_FILTER, ResultConverter
+from fimbu.db._fields import (
+    JsonBField, GUIDField, BigIntIdentityField,
+    EncryptedStringField, EncryptedTextField, DateTimeUTCField
+)
+
 
 __all__ = [
     "and_",
@@ -87,6 +93,12 @@ __all__ = [
     "TimeField",
     "URLField",
     "UUIDField",
+    "JsonBField",
+    "GUIDField",
+    "BigIntIdentityField",
+    "DateTimeUTCField",
+    "EncryptedStringField",
+    "EncryptedTextField",
     "UniqueConstraint",
     "settings",
     "run_sync",
@@ -95,4 +107,7 @@ __all__ = [
     "database_registry",
     "get_database",
     "build_db_url",
+    "to_schema",
+    "EMPTY_FILTER",
+    "ResultConverter",
 ]

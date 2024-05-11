@@ -29,8 +29,8 @@ classifiers = [
   "Topic :: Software Development :: Libraries :: Python Modules",
 ]
 dependencies = [
-    "edgy>=0.10.1",
-    "litestar[standard]>=2.8.2",
+    "edgy[postgres]>=0.10.1",
+    "litestar[jwt]>=2.8.3",
     "black>=24.4.2",
     "rich-click>=1.8.0",
     "cryptography>=42.0.5",
@@ -38,6 +38,7 @@ dependencies = [
     "python-jose>=3.3.0",
     "passlib>=1.7.4",
     "argon2-cffi>=23.1.0",
+    "structlog>=24.1.0",
 ]
 requires-python = ">=3.10"
 readme = "README.md"

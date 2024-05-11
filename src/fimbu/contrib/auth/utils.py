@@ -1,3 +1,4 @@
+from  fimbu.conf import settings
 from __future__ import annotations
 
 from functools import lru_cache
@@ -6,7 +7,7 @@ from typing import TYPE_CHECKING, Any
 from fimbu.conf import settings
 from fimbu.contrib.auth.protocols import UserT
 from fimbu.core.exceptions import ImproperlyConfigured
-from fimbu.contrib.auth.adapters.repository import RoleRepository
+from fimbu.contrib.auth.repository import RoleRepository
 from fimbu.utils.module_loading import import_string
 
 
@@ -16,7 +17,19 @@ if TYPE_CHECKING:
     from litestar.security.session_auth.auth import SessionAuth
     from fimbu.contrib.auth import AuthPlugin
     from fimbu.contrib.auth.service import BaseUserService
+    from fimbu.contrib.auth.models import User
 
+
+__all__ = [
+    "get_auth_plugin",
+    "get_auth_backend",
+    "get_user_service",
+    "get_user_model",
+    "get_path",
+    "get_auth_config",
+    "has_custom_model",
+    "installed_native_auth",
+]
 
 def get_auth_plugin(app: Litestar) -> AuthPlugin:
     """Get the AuthPlugin from the Litestar application."""
@@ -30,6 +43,7 @@ def get_auth_plugin(app: Litestar) -> AuthPlugin:
 
 def get_auth_backend(app: Litestar) -> JWTCookieAuth | JWTAuth | SessionAuth:
     return get_auth_plugin(app)._config.auth_backend
+
 
 def get_user_service(app: Litestar) -> BaseUserService[Any, Any]:
     """Get a `UserService` instance outside of a Litestar request context."""
@@ -47,7 +61,8 @@ def get_user_service(app: Litestar) -> BaseUserService[Any, Any]:
         hash_schemes=config.hash_schemes,
     )
 
-def get_user_model() -> UserT:
+
+def get_user_model() -> User:
     """Get the user model from the settings."""
     if hasattr(settings, 'USER_MODEL'):
         user_model = import_string(settings.USER_MODEL)
@@ -67,3 +82,12 @@ def get_path(path: str, prefix: str = "") -> str:
 def get_auth_config(attribute: str) -> Any:
     return import_string(getattr(settings, attribute))
 
+
+def has_custom_model() -> bool:
+    """Check if app as a custom model"""
+    return settings.USER_MODEL != 'fimbu.contrib.auth.models.User'
+
+
+def installed_native_auth() -> bool:
+    """Check if settings.INSTALLED_APPs contains fimbu.contrib.auth"""
+    return 'fimbu.contrib.auth' in settings.INSTALLED_APPS
