@@ -15,14 +15,14 @@ from fimbu.contrib.auth.utils import get_path
 from fimbu.contrib.schema import Message
 
 
-IDENTIFIER_URI = settings.AUTH_UUID_IDENTIFIERS
+
 PREFIX: str = settings.AUTH_PREFIX
 
 
 class UserRoleController(Controller):
     """Handles the adding and removing of User Role records."""
 
-    tags = ["User Account Roles"]
+    tags = ["Auth - User Roles"]
     guards = [requires_superuser]
     dependencies = {
         "users_service": Provide(provide_user_service),
@@ -32,7 +32,7 @@ class UserRoleController(Controller):
     @post(
         operation_id="AssignUserRole",
         name="users:assign-role",
-        path=get_path(f'/roles/{IDENTIFIER_URI}/assign', PREFIX),
+        path=get_path('/roles/{role_slug:str}/assign', PREFIX),
     )
     async def assign_role(
         self,
@@ -57,7 +57,7 @@ class UserRoleController(Controller):
         name="users:revoke-role",
         summary="Remove Role",
         description="Removes an assigned role from a user.",
-        path=get_path(f'/roles/{IDENTIFIER_URI}/revoke', PREFIX),
+        path=get_path('/roles/{role_slug:str}/revoke', PREFIX),
     )
     async def revoke_role(
         self,

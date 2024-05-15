@@ -29,6 +29,8 @@ from litestar import Litestar as OriginalLitestar
 from fimbu.core.exceptions import ImproperlyConfigured
 from fimbu.conf import settings
 from fimbu.apps import apps
+from fimbu.core.exceptions.handlers import core_handle_exceptions
+from fimbu.core.utils import exception_to_http_response
 from fimbu.middleware.builtins import (
     get_allowed_hosts_config,
     get_compression_config,
@@ -39,12 +41,28 @@ from fimbu.middleware.builtins import (
 
 from .utils import get_template_config, get_static_file_config, get_middleware
 
-from fimbu.db import Migrate, EdgyExtra
+from fimbu.db import Migrate
 from fimbu.db import get_db_connection
+from fimbu.core.exceptions import FimbuException
+from edgy.exceptions import EdgyException
+
+
 
 __all__ = ("Application",)
 
 db, registry = get_db_connection()
+
+
+async def db_on_start_up():
+    if db and not db.is_connected:
+        await db.connect()
+
+
+async def db_on_shutdown():
+    if db and db.is_connected:
+        await db.disconnect()
+
+
 
 class Litestar(OriginalLitestar):
     """
@@ -67,8 +85,9 @@ class Application:
     dependencies: dict[str, Any] = {}
 
     on_app_init: List[Callable[[Any], Any]] = []
-    on_startup: List[Callable[[Any], Any]] = [db.connect]
-    on_shutdown: List[Callable[[Any], Any]] = [db.disconnect]
+    on_startup: List[Callable[[Any], Any]] = [db_on_start_up]
+    on_shutdown: List[Callable[[Any], Any]] = [db_on_shutdown]
+    lifespan: List[Callable[[Any], Any]] = []
 
     route_handlers: List[Callable[[Any], Any]] = []
 
@@ -77,7 +96,10 @@ class Application:
 
     before_send: List[Callable[[Any], Any]] = []
     after_exceptions: List[Callable[[Any], Any]] = []
-    exception_hanlders: dict[str, Callable[[Any], Any]] = {}
+    exception_hanlders: dict[str, Callable[[Any], Any]] = {
+        EdgyException: core_handle_exceptions,
+        FimbuException: exception_to_http_response
+    }
     listeners : List[Callable[[Any], Any]] = []
 
     pdb_exceeption: bool = False
@@ -255,6 +277,9 @@ class Application:
 
         if cls.guards:
             app_config["guards"] = cls.guards
+
+        if cls.lifespan:
+            app_config["lifespan"] = cls.lifespan
 
         if cls.type_encoders:
             app_config["type_encoders"] = cls.type_encoders

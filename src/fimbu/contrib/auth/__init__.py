@@ -99,13 +99,6 @@ def install_auth_plugin(app: ApplicationType) -> None:
         AuthConfig(
             auth_backend_class=get_auth_config("AUTH_BACKEND_CLASS"),
             session_backend_config=get_auth_config("SESSION_BACKEND_CONFIG")(),
-            user_read_dto=get_auth_config("USER_READ_DTO"),
-            user_registration_dto=get_auth_config("USER_REGISTRATION_DTO"),
-            user_update_dto=get_auth_config("USER_UPDATE_DTO"),
-            role_create_dto=get_auth_config("ROLE_CREATE_DTO"),
-            role_read_dto=get_auth_config("ROLE_READ_DTO"),
-            role_update_dto=get_auth_config("ROLE_UPDATE_DTO"),
-            role_model=get_auth_config("ROLE_MODEL"),
             user_model=get_user_model(),
             secret=settings.SECRET,
             user_service_class=get_auth_config("USER_SERVICE_CLASS"),

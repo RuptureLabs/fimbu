@@ -71,6 +71,7 @@ MIGRATIONS_LOCATION = BASE_DIR / APP_MIGRATIONS_FOLDER
 
 ####### -------------------------------- ALLOWED HOSTS CONFIG --------------------- #########
 
+DISABLE_ALLOWED_HOSTS: bool = False
 ALLOWED_HOSTS: list[str] = ['127.0.0.1']
 EXCLUDE_HOSTS: str | list[str] | None = None  # exclude parameter from Litestar's AllowedHostsConfig
 ALLOWED_HOSTS_EXCLUDE_OPT_KEY: str | None = None # exclude_opt_key parameter from Litestar's AllowedHostsConfig
@@ -80,6 +81,7 @@ WWW_REDIRECT: bool = True
 
 ####### -------------------------------- CORS CONFIG ------------------------------ ##########
 
+DISABLE_CORS: bool = False
 ALLOW_ORIGINS: list[str] = []
 ALLOW_METHODS: list[str] = ['*']
 ALLOW_HEADERS: list[str] = []
@@ -91,6 +93,7 @@ CORS_MAX_AGE: int = 600
 
 ##### -------------------------------- COMPRESSION CONFIG ------------------------- ###########
 
+DISABLE_COMPRESSION: bool = False
 COMPRESSION_BACKEND: Literal['gzip', 'brotli'] | None = None
 COMPRESSION_MINIMUM_SIZE: int = 500
 GZIP_COMPRESS_LEVEL: int = 9                                            # [0-9]
@@ -105,6 +108,7 @@ COMPRESSION_EXCLUDE_OPT_KEY: str | None = None
 
 #### -------------------------------- CSRF CONFIG ---------------------------------- ###########
 
+DISABLE_CSRF: bool = False
 CSRF_COOKIE_NAME: str = 'csrftoken'
 CSRF_COOKIE_PATH: str = '/'
 CSRF_HEADER_NAME: str = 'x-csrftoken'
@@ -118,6 +122,7 @@ EXCLUDE_FROM_CSRF_KEY: str = 'exclude_from_csrf'
 
 #### ------------------------------- RESPONSE CACHE CONFIG ------------------------- ############
 
+DISABLE_RESPONSE_CACHE = False
 RESPONSE_CACHE_DEFAULT_EXPIRATION: int | None= 60
 RESPONSE_CACHE_STORE_NAME: str = 'response_cache'
 
@@ -145,20 +150,16 @@ EMAIL_SUBJECT_PREFIX = "[Fimbu ] "
 AUTH_BACKEND_CLASS = 'litestar.security.session_auth.SessionAuth'
 SESSION_BACKEND_CONFIG = 'litestar.middleware.session.server_side.ServerSideSessionConfig'
 USER_MODEL = 'fimbu.contrib.auth.models.User'
-ROLE_MODEL =  'fimbu.contrib.auth.models.Role'
-USER_READ_DTO = 'fimbu.contrib.auth.dto.UserReadDTO'
-USER_REGISTRATION_DTO = 'fimbu.contrib.auth.dto.UserRegistrationDTO'
-USER_UPDATE_DTO = 'fimbu.contrib.auth.dto.UserUpdateDTO'
-ROLE_CREATE_DTO = 'fimbu.contrib.auth.dto.RoleCreateDTO'
-ROLE_READ_DTO = 'fimbu.contrib.auth.dto.RoleReadDTO'
-ROLE_UPDATE_DTO = 'fimbu.contrib.auth.dto.RoleUpdateDTO'
+
 HASH_SCHEMES = ["argon2"]
 AUTH_GUARDS = []
 AUTH_TAGS = []
 AUTH_PREFIX = "/auth"
-AUTH_UUID_IDENTIFIERS =  "/{id_:uuid}"
 AUTH_EXCLUDE_PATHS = ['/schema',]
-USER_SERVICE_CLASS = 'fimbu.contrib.auth.service.BaseUserService'
+USER_SERVICE_CLASS = 'fimbu.contrib.auth.service.UserService'
 USERS_REPOSITORY = 'fimbu.contrib.auth.adapters.repository.UserRepository'
-ROLE_REPOSITORY = 'fimbu.contrib.auth.adapters.repository.RoleRepository'
 USER_DEFAULT_ROLE = "Application Access"
+
+# ----------------------------- SYSTEM HEALTH -----------------------------------------
+
+SYSTEM_HEALTH_PATH: str = "/health"

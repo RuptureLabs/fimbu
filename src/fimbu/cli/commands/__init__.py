@@ -199,8 +199,7 @@ class Starter(object):
                     mode=black.FileMode(line_length=80),
                 )
             except Exception as exception:
-                print(f"Problem processing {output_file_name}")
-                raise exception from exception
+                print(f"[!] Problem processing {output_file_name}")
 
         with open(os.path.join(output_dir_path, output_file_name), 'w') as output_file: # pylint: disable=W1514
             output_file.write(output_contents)

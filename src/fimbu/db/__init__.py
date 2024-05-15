@@ -37,7 +37,7 @@ from edgy.core.extras import EdgyExtra
 from edgy.core.signals import Signal
 from edgy.core.utils.sync import run_sync
 from edgy.exceptions import MultipleObjectsReturned, ObjectNotFound
-from .utils import get_db_connection, get_db_registry, get_database, database_registry
+from .utils import get_db_connection, get_db_registry, get_database
 from fimbu.db._converters import to_schema, EMPTY_FILTER, ResultConverter
 from fimbu.db._fields import (
     JsonBField, GUIDField, BigIntIdentityField,
@@ -104,7 +104,6 @@ __all__ = [
     "run_sync",
     "get_db_connection",
     "get_db_registry",
-    "database_registry",
     "get_database",
     "build_db_url",
     "to_schema",

@@ -17,7 +17,7 @@ class GUIDField(UUIDField):
         return GUID(**kwargs)
 
 
-class JsonBField(FieldFactory, JsonB):
+class JsonBField(FieldFactory, str):
     _type = JsonB
 
     @classmethod
@@ -25,7 +25,7 @@ class JsonBField(FieldFactory, JsonB):
         return JsonB(**kwargs)
     
 
-class DateTimeUTCField(FieldFactory, DateTimeUTC):
+class DateTimeUTCField(FieldFactory, datetime):
     _type = datetime
 
     @classmethod
@@ -33,7 +33,7 @@ class DateTimeUTCField(FieldFactory, DateTimeUTC):
         return DateTimeUTC(**kwargs)    
 
 
-class BigIntIdentityField(FieldFactory, BigIntIdentity):
+class BigIntIdentityField(FieldFactory, int):
     _type = int
 
     @classmethod
@@ -41,7 +41,7 @@ class BigIntIdentityField(FieldFactory, BigIntIdentity):
         return BigIntIdentity(**kwargs)
 
 
-class EncryptedStringField(FieldFactory, EncryptedString):
+class EncryptedStringField(FieldFactory, str):
     _type = str
 
     @classmethod
@@ -49,7 +49,7 @@ class EncryptedStringField(FieldFactory, EncryptedString):
         return EncryptedString(**kwargs)
     
 
-class EncryptedTextField(FieldFactory, EncryptedText):
+class EncryptedTextField(FieldFactory, str):
     _type = str
 
     @classmethod

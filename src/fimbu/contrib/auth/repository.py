@@ -1,8 +1,8 @@
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Any, Generic, Collection
+from typing import Any, Generic
 from fimbu.core.exceptions import ImproperlyConfigured
-from fimbu.contrib.auth.models import Role, User, UserRole
+from fimbu.contrib.auth.models import Role, UserRole
 from fimbu.contrib.auth.protocols import RoleT, UserT
 from fimbu.db.repository import Repository
 
@@ -30,9 +30,6 @@ class UserRepository(Repository[UserT], Generic[UserT]):
 
         return user
     
-
-    def filter_collection_by_kwargs(self, collection: Collection[UserT], /, **kwargs: Any) -> Collection[UserT]:
-        return super().filter_collection_by_kwargs(collection, **kwargs)
 
 
 class RoleRepository(Repository[Role]):

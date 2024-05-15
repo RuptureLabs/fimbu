@@ -27,7 +27,8 @@ class DatabaseRegistry:
         """
         Get primary database
         """
-        if self._databases:
+
+        if self._databases and self._primary_db in self._databases:
             return self._databases[self._primary_db]
         return None
     

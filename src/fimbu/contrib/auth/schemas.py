@@ -5,7 +5,7 @@ from uuid import UUID  # noqa: TCH003
 
 import msgspec
 
-from fimbu.contrib.base import BaseStruct
+from fimbu.contrib.schema import BaseStruct
 
 __all__ = (
     "AccountLogin",
@@ -62,7 +62,7 @@ class User(BaseStruct):
 class UserCreate(BaseStruct):
     email: str
     password: str
-    username: str | None = None
+    username: str 
     is_superuser: bool = False
     is_active: bool = True
     is_verified: bool = False

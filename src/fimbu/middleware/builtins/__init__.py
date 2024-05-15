@@ -20,6 +20,9 @@ def get_cors_config() -> Type[CORSConfig] | None :
     Returns:
         CORSConfig | None
     """
+    if hasattr(settings, "DISABLE_CORS") and settings.DISABLE_CORS:
+        return None
+    
     _conf: Dict[str, Any] = {}
 
     if hasattr(settings, 'ALLOW_ORIGINS'):
@@ -57,6 +60,9 @@ def get_csrf_config() -> Type[CSRFConfig] | None:
     Returns:
         CSRFConfig | None
     """
+    if hasattr(settings, 'DISABLE_CSRF') and settings.DISABLE_CSRF:
+        return None
+
     _conf: Dict[str, Any] = {}
 
     if hasattr(settings, 'CSRF_COOKIE_NAME'):
@@ -108,6 +114,10 @@ def get_allowed_hosts_config() -> Type[AllowedHostsConfig] | None:
     Returns:
         AllowedHostsConfig | None
     """
+
+    if hasattr(settings, 'DISABLE_ALLOWED_HOSTS') and settings.DISABLE_ALLOWED_HOSTS:
+        return None
+    
     _conf: Dict[str, Any] = {}
     
     if hasattr(settings, 'ALLOWED_HOSTS'):
@@ -134,6 +144,10 @@ def get_compression_config() -> Type[CompressionConfig] | None:
     """
     Load Conpression config from settings
     """
+
+    if hasattr(settings, 'DISABLE_COMPRESSION') and settings.DISABLE_COMPRESSION:
+        return None
+    
     _conf: Dict[str, Any] = {}
 
     if hasattr(settings, 'COMPRESSION_BACKEND'):
@@ -179,6 +193,10 @@ def get_response_cache_config() -> Type[ResponseCacheConfig] | None:
     Returns:
         ResponseCacheConfig | None
     """
+
+    if hasattr(settings, 'DISABLE_RESPONSE_CACHE') and settings.DISABLE_RESPONSE_CACHE:
+        return None
+    
     _conf: Dict[str, Any] = {}
 
     if hasattr(settings, 'RESPONSE_CACHE_DEFAULT_EXPIRATION'):

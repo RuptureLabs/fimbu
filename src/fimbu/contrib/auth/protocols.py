@@ -2,10 +2,12 @@ from __future__ import annotations
 
 from datetime import datetime
 from typing import TYPE_CHECKING, Any, Protocol, TypeVar, runtime_checkable
+from fimbu.core.types import T
+
 
 if TYPE_CHECKING:
     from uuid import UUID
-    from fimbu.core.types import T
+    
 
 __all__ = ["RoleProtocol", "UserProtocol", "UserRoleProtocol", "RoleT", "UserT", "UserRoleT"]
 

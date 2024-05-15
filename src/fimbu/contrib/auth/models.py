@@ -8,10 +8,10 @@ from fimbu.contrib.auth.utils import installed_native_auth, has_custom_model, ge
 from fimbu.utils.text import slugify
 
 
-registry, _ = get_db_connection()
+_, registry = get_db_connection()
 
 
-class User(Model, UserMixin):
+class User(UserMixin):
     """User model"""
     username: str = fields.CharField(max_length=75)
 
@@ -21,11 +21,11 @@ class User(Model, UserMixin):
         abstract = has_custom_model()
 
 
-class Role(Model, UUIDMixin):
+class Role(UUIDMixin):
     """User model"""
     name: str = fields.CharField(max_length=75)
-    slug: str = fields.CharField(max_length=75)
-    description: str = fields.TextField()
+    slug: str = fields.CharField(max_length=75, index=True, unique=True, default='')
+    description: str = fields.TextField(null=True, default=None)
 
 
     async def save(self, *args, **kwargs: Any) -> Coroutine[Any, Any, type[Model] | Any]:
@@ -41,9 +41,9 @@ class Role(Model, UUIDMixin):
 
 UserModel = get_user_model()
 
-class UserRole(Model, UUIDMixin):
+class UserRole(UUIDMixin):
     user: UUID = fields.ForeignKey(
-        to=User,
+        to=UserModel,
         related_name="user_roles",
     )
     role: UUID = fields.ForeignKey(
@@ -57,7 +57,7 @@ class UserRole(Model, UUIDMixin):
         abstract = not installed_native_auth()
 
 
-class UserOauthAccount(Model, UUIDMixin):
+class UserOauthAccount(UUIDMixin):
     """User Oauth Account"""
 
     user: UUID = fields.ForeignKey(UserModel, on_delete=CASCADE)

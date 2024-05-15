@@ -68,11 +68,10 @@ def get_db_registry() -> DatabaseRegistry:
         raise ImproperlyConfigured("Invalid database settings")
 
     return _dr
-    
 
-database_registry = get_db_registry()
 
 @lru_cache()
 def get_db_connection():
+    database_registry = get_db_registry()
     database = database_registry.get_primary_db()
     return database, Registry(database=database, extra=database_registry.get_extras())

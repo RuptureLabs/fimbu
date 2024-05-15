@@ -2,37 +2,42 @@
 
 from __future__ import annotations
 
-from typing import Annotated
+from typing import Annotated, Any, cast
 
 from litestar import Controller, Request, Response, get, post
 from litestar.di import Provide
 from litestar.enums import RequestEncodingType
 from litestar.params import Body
+from litestar.security.session_auth import SessionAuth
 from litestar.security.jwt import OAuth2Login
+from litestar.contrib.jwt import JWTAuth, JWTCookieAuth, OAuth2PasswordBearerAuth
+from litestar.exceptions import NotAuthorizedException, PermissionDeniedException
 
 from fimbu.conf import settings
 from fimbu.contrib.auth.dependencies import provide_user_service
-from fimbu.contrib.auth.guards import auth, requires_active_user
+from fimbu.contrib.auth.guards import requires_active_user
 from fimbu.contrib.auth.schemas import AccountLogin, AccountRegister, User
-from fimbu.contrib.auth.service import UserService
+from fimbu.contrib.auth.protocols import UserT, UserProtocol
+from fimbu.core.exceptions import ImproperlyConfiguredException
+from fimbu.contrib.auth.service import UserService, UserServiceType
+from fimbu.contrib.schema import Message
 from fimbu.utils.text import slugify
-from fimbu.contrib.auth.utils import get_user_model
+from fimbu.contrib.auth.utils import get_user_model, get_auth_backend
 from fimbu.contrib.auth.utils import get_path
 
 
 UserModel = get_user_model()
 
 
-IDENTIFIER_URI = settings.AUTH_UUID_IDENTIFIERS
 PREFIX: str = settings.AUTH_PREFIX
-USER_DEFAULT_ROLE = settings.AUTH_USER_DEFAULT_ROLE
+USER_DEFAULT_ROLE = settings.USER_DEFAULT_ROLE
 
 
 class AccessController(Controller):
     """User login and registration."""
 
-    tags = ["Access"]
-    dependencies = {"users_service": Provide(provide_user_service)}
+    tags = ["Auth - Access"]
+    dependencies = {"service": Provide(provide_user_service)}
     signature_namespace = {
         "UserService": UserService,
         "OAuth2Login": OAuth2Login,
@@ -48,20 +53,29 @@ class AccessController(Controller):
         cache=False,
         summary="Login",
         exclude_from_auth=True,
+        exclude_from_csrf=True,
     )
     async def login(
         self,
-        users_service: UserService,
+        request: Request[User, Any, Any],
+        service: UserServiceType,
         data: Annotated[AccountLogin, Body(title="OAuth2 Login", media_type=RequestEncodingType.URL_ENCODED)],
-    ) -> Response[OAuth2Login]:
+    ) -> Any:
         """Authenticate a user."""
-        user = await users_service.authenticate(data.email, data.password)
-        return auth.login(user.email)
+
+        auth_backend = get_auth_backend(request.app)
+
+        if isinstance(auth_backend, (JWTAuth, JWTCookieAuth, OAuth2PasswordBearerAuth)):
+            return await self.login_jwt(data, service, request)
+        elif isinstance(auth_backend, SessionAuth):
+            return await self.login_session(data, service, request)
+        else:
+            raise ImproperlyConfiguredException("login can only be used with JWTAuth, JWTCookieAuth, OAuth2PasswordBearerAuth or SessionAuth")
 
     @post(
         operation_id="AccountLogout",
         name="account:logout",
-        path=get_path("/login", PREFIX),
+        path=get_path("/logout", PREFIX),
         cache=False,
         summary="Logout",
         exclude_from_auth=True,
@@ -69,8 +83,9 @@ class AccessController(Controller):
     async def logout(
         self,
         request: Request,
-    ) -> Response:
+    ) -> Response[Message]:
         """Account Logout"""
+        auth = get_auth_backend(request.app)
         request.cookies.pop(auth.key, None)
         request.clear_session()
 
@@ -90,21 +105,23 @@ class AccessController(Controller):
         cache=False,
         summary="Create User",
         description="Register a new account.",
+        exclude_from_auth=True,
+        exclude_from_csrf=True,
     )
     async def signup(
         self,
         request: Request,
-        users_service: UserService,
+        service: UserServiceType,
         data: AccountRegister,
     ) -> User:
         """User Signup."""
         user_data = data.to_dict()
-        role_obj = await users_service.get_role(slug=slugify(USER_DEFAULT_ROLE))
+
+        user = await service.register(user_data)
+        role_obj = await service.get_role(slug=slugify(USER_DEFAULT_ROLE))
         if role_obj is not None:
-            user_data.update({"role_id": role_obj.id})
-        user = await users_service.create(user_data)
-        request.app.emit(event_id="user_created", user_id=user.id)
-        return users_service.to_schema(user, schema_type=User)
+            await service.assign_role(user, role_obj)
+        return service.to_schema(user, schema_type=User)
 
     @get(
         operation_id="AccountProfile",
@@ -114,6 +131,40 @@ class AccessController(Controller):
         summary="User Profile",
         description="User profile information.",
     )
-    async def profile(self, request: Request, current_user: UserModel, users_service: UserService) -> User: # type: ignore
+    async def profile(self, request: Request[User, Any, Any], service: UserServiceType) -> User: # type: ignore
         """User Profile."""
-        return users_service.to_schema(current_user, schema_type=User)
+        current_user = await service.get_user(request.user.id)
+        return service.to_schema(current_user, schema_type=User)
+
+
+    async def login_jwt(self, 
+        data: AccountRegister,
+        service: UserServiceType, 
+        request: Request,
+        auth_backend: JWTAuth | JWTCookieAuth | OAuth2PasswordBearerAuth | None = None) -> Response[OAuth2Login]:
+
+        user = await service.authenticate(data, request)
+        if user is None:
+            raise NotAuthorizedException(detail="login failed, invalid input")
+
+        if user.is_verified is False:
+            raise PermissionDeniedException(detail="not verified")
+        
+        if user.is_active is False:
+            raise PermissionDeniedException(detail="not active")
+        
+        return auth_backend.login(identifier=str(user.id), response_body=cast(UserT, user))
+    
+
+    async def login_session(self,
+        data: AccountLogin,
+        service: UserServiceType, 
+        request: Request
+        ) -> UserT:
+        user = await service.authenticate(data, request)
+        if user is None:
+            request.clear_session()
+            raise NotAuthorizedException(detail="login failed, invalid input")
+
+        request.set_session({"user_id": user.id})
+        return service.to_schema(user, schema_type=User)

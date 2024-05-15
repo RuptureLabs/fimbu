@@ -25,6 +25,8 @@ from edgy.cli.operations import (
     stamp,
 )
 
+from fimbu.db.utils import get_db_registry
+
 from .commands import start_app, start_project, shell, inspect_db
 
 
@@ -35,8 +37,6 @@ setup_fimbu() # setup fimbu cli
 from fimbu.cli._utils import FimbuExtensionGroup
 from fimbu.cli.env import FimbuEnv
 from fimbu.conf import settings
-from fimbu.db import database_registry
-from litestar.types import AnyCallable
 
 
 from fimbu.conf import settings
@@ -67,7 +67,11 @@ __all__ = [
 )
 @click.pass_context
 def fimbu_cli(ctx: Context, app_path: str | None, app_dir: Path | None = None):
-    os.environ.setdefault("EDGY_DATABASE_URL", database_registry.get_primary_db().url._url)
+    db = get_db_registry().get_primary_db()
+    
+    if db is not None:
+        os.environ.setdefault("EDGY_DATABASE_URL", db.url._url)
+
     if ctx.obj is None:
         ctx.obj = lambda: FimbuEnv.from_env(app_path=app_path, app_dir=app_dir)
 

@@ -7,10 +7,13 @@ from uuid import UUID
 from jose import JWTError
 from litestar.contrib.jwt.jwt_token import Token
 from litestar.exceptions import ImproperlyConfiguredException
-from fimbu.contrib.auth.protocols import RoleT, UserT, UserRoleT
+from fimbu.contrib.auth.models import Role, UserRole
+from fimbu.contrib.auth.protocols import RoleT, UserT
 from fimbu.contrib.auth.exceptions import InvalidTokenException
 from fimbu.utils.crypto import PasswordManager
 from fimbu.db import ResultConverter
+
+from fimbu.contrib.auth.repository import RoleRepository, UserRepository, UserRoleRepository
 
 from fimbu.db.exceptions import DuplicateRecordError, ObjectNotFound
 
@@ -19,12 +22,10 @@ __all__ = ["BaseUserService", "UserService"]
 
 if TYPE_CHECKING:
     from litestar import Request
-
-    from fimbu.contrib.auth.repository import RoleRepository, UserRepository, UserRoleRepository
     from fimbu.contrib.auth.schemas import AccountLogin
 
 
-class BaseUserService(Generic[UserT, RoleT, UserRoleT], ResultConverter):  # pylint: disable=R0904
+class BaseUserService(Generic[UserT], ResultConverter):  # pylint: disable=R0904
     """Main user management interface."""
 
     user_model: type[UserT]
@@ -35,8 +36,6 @@ class BaseUserService(Generic[UserT, RoleT, UserRoleT], ResultConverter):  # pyl
         user_repository: UserRepository[UserT],
         secret: str,
         hash_schemes: Sequence[str] | None = None,
-        role_repository: RoleRepository[RoleT, UserT] | None = None,
-        user_role_repository: UserRoleRepository[UserRoleT] | None = None,
     ) -> None:
         """User service constructor.
 
@@ -47,13 +46,13 @@ class BaseUserService(Generic[UserT, RoleT, UserRoleT], ResultConverter):  # pyl
             role_repository: A `RoleRepository` instance.
         """
         self.user_repository = user_repository
-        self.role_repository = role_repository
-        self.user_role_repository = user_role_repository
+        self.role_repository = RoleRepository(Role)
+        self.user_role_repository = UserRoleRepository(UserRole)
         self.secret = secret
         self.password_manager = PasswordManager(hash_schemes=hash_schemes)
         self.user_model = self.user_repository.model_type
-        if role_repository is not None:
-            self.role_model = role_repository.model_type
+        self.role_model = Role
+        
 
     async def add_user(self, user: UserT, verify: bool = False, activate: bool = True) -> UserT:
         """Create a new user programmatically.
@@ -70,7 +69,6 @@ class BaseUserService(Generic[UserT, RoleT, UserRoleT], ResultConverter):  # pyl
         user.is_verified = verify
         user.is_active = activate
 
-        await user.save()
         return await self.user_repository.add(user)
 
     async def register(self, data: dict[str, Any], request: Request | None = None) -> UserT:
@@ -82,7 +80,7 @@ class BaseUserService(Generic[UserT, RoleT, UserRoleT], ResultConverter):  # pyl
         """
         await self.pre_registration_hook(data, request)
 
-        data["password_hash"] = self.password_manager.hash(data.pop("password"))
+        data["password_hash"] = await self.password_manager.get_password_hash(data.pop("password"))
         user = await self.add_user(self.user_model(**data))  # type: ignore[arg-type]
         await self.initiate_verification(user)  # TODO: make verification optional?
 
@@ -362,17 +360,35 @@ class BaseUserService(Generic[UserT, RoleT, UserRoleT], ResultConverter):  # pyl
 
         return token
 
-    async def get_role(self, id_: "UUID") -> RoleT:
-        """Retrieve a role by id.
+    async def get_role(
+        self,
+        id_: UUID | None = None,
+        slug: str | None = None) -> Role:
+        """Retrieve a role by id or by slug.
 
         Args:
             id_: UUID of the role.
+            slug: Slug of the role.
         """
         if self.role_repository is None:
             raise ImproperlyConfiguredException("roles have not been configured")
-        return await self.role_repository.get(id_)
+        
+        if id_ is not None:
+            return await self.role_repository.get(id_)
+        elif slug is not None:
+            return await self.role_repository.get_one(slug=slug)
+        else:
+            raise ValueError("role id or slug must be provided")
+        
 
-    async def get_role_by_name(self, name: str) -> RoleT:
+    async def get_roles(self) -> list[Role]:
+        """Retrieve all roles."""
+        if self.role_repository is None:
+            raise ImproperlyConfiguredException("roles have not been configured")
+        return await self.role_repository.list()
+    
+
+    async def get_role_by_name(self, name: str) -> Role:
         """Retrieve a role by name.
 
         Args:
@@ -382,7 +398,7 @@ class BaseUserService(Generic[UserT, RoleT, UserRoleT], ResultConverter):  # pyl
             raise ImproperlyConfiguredException("roles have not been configured")
         return await self.role_repository.get_one(name=name)
 
-    async def add_role(self, data: RoleT) -> RoleT:
+    async def add_role(self, data: Role) -> Role:
         """Add a new role to the database.
 
         Args:
@@ -392,7 +408,7 @@ class BaseUserService(Generic[UserT, RoleT, UserRoleT], ResultConverter):  # pyl
             raise ImproperlyConfiguredException("roles have not been configured")
         return await self.role_repository.add(data)
 
-    async def update_role(self, id_: "UUID", data: RoleT) -> RoleT:
+    async def update_role(self, id_: "UUID", data: Role) -> Role:
         """Update a role in the database.
 
         Args:
@@ -403,7 +419,7 @@ class BaseUserService(Generic[UserT, RoleT, UserRoleT], ResultConverter):  # pyl
             raise ImproperlyConfiguredException("roles have not been configured")
         return await self.role_repository.update(data)
 
-    async def delete_role(self, id_: "UUID") -> RoleT:
+    async def delete_role(self, id_: "UUID") -> Role:
         """Delete a role from the database.
 
         Args:
@@ -414,12 +430,12 @@ class BaseUserService(Generic[UserT, RoleT, UserRoleT], ResultConverter):  # pyl
         return await self.role_repository.delete(id_)
 
 
-    async def get_user_role(self, user_id: "UUID", role_id: "UUID") -> UserRoleT:
+    async def get_user_role(self, user_id: "UUID", role_id: "UUID") -> UserRole:
         if self.user_role_repository is None:
             raise ImproperlyConfiguredException("user roles have not been configured")
         return await self.user_role_repository.get(user_id, role_id)
     
-    async def assign_role(self, user_id: "UUID", role_id: "UUID") -> UserT:
+    async def assign_role(self, user: "UUID" | UserT, role: "UUID" | RoleT) -> UserT:
         """Add a role to a user.
 
         Args:
@@ -428,8 +444,11 @@ class BaseUserService(Generic[UserT, RoleT, UserRoleT], ResultConverter):  # pyl
         """
         if self.user_role_repository is None:
             raise ImproperlyConfiguredException("roles have not been configured")
-        user = await self.get_user(user_id)
-        role = await self.get_role(role_id)
+        
+        if isinstance(user, UUID):
+            user = await self.get_user(user)
+        if isinstance(role, UUID):
+            role = await self.get_role(role)
 
         # if not hasattr(user, "roles"):
         #     raise ImproperlyConfiguredException("roles have not been configured")
@@ -461,5 +480,5 @@ class BaseUserService(Generic[UserT, RoleT, UserRoleT], ResultConverter):  # pyl
 UserServiceType = TypeVar("UserServiceType", bound=BaseUserService)
 
 
-class UserService(BaseUserService[UserT, RoleT], Generic[UserT, RoleT]):
+class UserService(BaseUserService[UserT]):
     """Fimbu user service."""

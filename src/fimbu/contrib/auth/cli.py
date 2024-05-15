@@ -10,6 +10,10 @@ from click import echo, group, option, prompt
 from fimbu.cli._utils import FimbuGroup
 
 from fimbu.contrib.auth.utils import get_auth_plugin, get_user_service
+from fimbu.db.utils import get_db_connection
+
+db,_ = get_db_connection()
+
 
 if TYPE_CHECKING:
     from litestar import Litestar
@@ -46,25 +50,26 @@ def create_user(
 
 
     async def _create_user() -> None:
-        user_service = get_user_service(app)
-        if 'password_hash' in kwargs:
-            kwargs['password_hash'] = user_service.password_manager.hash(kwargs['password_hash'])
-        
-        try:
-            user = await user_service.add_user(
-                user=auth_config.user_model(**kwargs),
-                activate=True,
-                verify=False,
-            )
-            echo(f"User {user.id} created successfully.")
-        except DuplicateRecordError as e:
-            # could be caught IntegrityError or unique collision
-            msg = e.__cause__ if e.__cause__ else e
-            echo(f"Error: {msg}", err=True)
-            sys.exit(1)
-        except TypeError as e:
-            echo(f"Error: {e}", err=True)
-            sys.exit(1)
+        async with db:
+            user_service = get_user_service(app)
+            if 'password_hash' in kwargs:
+                kwargs['password_hash'] = await user_service.password_manager.get_password_hash(kwargs['password_hash'])
+            
+            try:
+                user = await user_service.add_user(
+                    user=auth_config.user_model(**kwargs),
+                    activate=True,
+                    verify=False,
+                )
+                echo(f"User {user.id} created successfully.")
+            except DuplicateRecordError as e:
+                # could be caught IntegrityError or unique collision
+                msg = e.__cause__ if e.__cause__ else e
+                echo(f"Error: {msg}", err=True)
+                sys.exit(1)
+            except TypeError as e:
+                echo(f"Error: {e}", err=True)
+                sys.exit(1)
 
     anyio.run(_create_user)
 
@@ -73,26 +78,23 @@ def create_user(
 @option("--name")
 @option("--description")
 def create_role(app: Litestar, name: str | None, description: str | None) -> None:
-    """Create a new role in the database."""
-
-    auth_config = get_auth_plugin(app)._config
+    """Create a new role in the database."""    
 
     name = name or prompt("Role name")
 
     async def _create_role() -> None:
-        user_service = get_user_service(app)
-        if auth_config.role_model is None:
-            echo("Role model is not defined")
-            sys.exit(1)
-        try:
-            role = await user_service.add_role(auth_config.role_model(name=name, description=description))
-            echo(f"Role {role.id} created successfully.")
-        except DuplicateRecordError as e:
-            # could be caught IntegrityError or unique collision
-            msg = e.__cause__ if e.__cause__ else e
-            echo(f"Error: {msg}", err=True)
-            sys.exit(1)
-
+        async with db:
+            user_service = get_user_service(app)
+            role_model = user_service.role_repository.model_type
+            try:
+                role = await user_service.add_role(role_model(name=name, description=description))
+                echo(f"Role {role.name} created successfully.")
+            except DuplicateRecordError as e:
+                # could be caught IntegrityError or unique collision
+                msg = e.__cause__ if e.__cause__ else e
+                echo(f"Error: {msg}", err=True)
+                sys.exit(1)
+        
     anyio.run(_create_role)
 
 

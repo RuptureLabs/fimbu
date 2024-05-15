@@ -1,4 +1,4 @@
-from typing import Any, Generic
+from typing import Any, Generic, Collection
 from edgy import ObjectNotFound
 from litestar.repository.abc import AbstractAsyncRepository
 from litestar.repository.filters import FilterTypes
@@ -285,3 +285,6 @@ class Repository(AbstractAsyncRepository[ModelT], Generic[ModelT]):
         """
         setattr(item, id_attribute if id_attribute is not None else cls.id_attribute, item_id)
         return item
+    
+    def filter_collection_by_kwargs(self, collection: Collection[ModelT], /, **kwargs: Any) -> Collection[ModelT]:
+        return super().filter_collection_by_kwargs(collection, **kwargs)
