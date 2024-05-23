@@ -4,7 +4,7 @@ from typing import TYPE_CHECKING
 
 from litestar.datastructures import URL
 from litestar.middleware.base import AbstractMiddleware
-from litestar.response import RedirectResponse
+from litestar.response import Redirect
 from litestar.status_codes import HTTP_307_TEMPORARY_REDIRECT
 
 if TYPE_CHECKING:
@@ -27,7 +27,7 @@ class HTTPSRedirectMiddleware(AbstractMiddleware):
             redirect_scheme = {"http": "https", "ws": "wss"}[url.scheme]
             netloc = url.hostname if url.port in (80, 443) else url.netloc
             url = url.with_replacements(scheme=redirect_scheme, netloc=netloc)
-            response = RedirectResponse(
+            response = Redirect(
                 str(url), status_code=HTTP_307_TEMPORARY_REDIRECT
             )
             await response(scope, receive, send)

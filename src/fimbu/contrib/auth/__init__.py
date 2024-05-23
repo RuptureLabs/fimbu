@@ -78,6 +78,8 @@ class AuthPlugin(InitPluginProtocol, CLIPluginProtocol):
                 exclude=settings.AUTH_EXCLUDE_PATHS,
             )
 
+            return self._config.auth_backend
+
         elif issubclass(self._config.auth_backend_class, JWTAuth) or issubclass(
             self._config.auth_backend_class, JWTCookieAuth
         ):

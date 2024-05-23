@@ -3,8 +3,9 @@ from __future__ import annotations
 from typing import TYPE_CHECKING, Any
 from uuid import UUID
 
+from fimbu.conf import settings
 from fimbu.db.exceptions import ObjectNotFound
-from fimbu.contrib.auth.utils import get_auth_plugin
+from fimbu.contrib.auth.utils import get_auth_plugin, user_is_verified
 
 __all__ = ["jwt_retrieve_user_handler", "session_retrieve_user_handler"]
 
@@ -33,8 +34,8 @@ async def session_retrieve_user_handler(session: dict[str, Any], connection: ASG
         if user_id is None:
             return None
         user = await repository.get(UUID(user_id))
-        
-        if user.is_active and not user.is_verified:
+
+        if user.is_active and user_is_verified(user):
             return user  # type: ignore[no-any-return]
     except ObjectNotFound:
         pass
@@ -55,7 +56,8 @@ async def jwt_retrieve_user_handler(token: Token, connection: ASGIConnection) ->
     )
     try:
         user = await repository.get(UUID(token.sub))
-        if user.is_active and user.is_verified:
+
+        if user.is_active and user_is_verified(user):
             return user  # type: ignore[no-any-return]
     except ObjectNotFound:
         pass

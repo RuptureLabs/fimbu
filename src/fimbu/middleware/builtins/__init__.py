@@ -1,15 +1,22 @@
-from typing import Any, Dict, Type
+from  __future__ import annotations
+
+from typing import TYPE_CHECKING
 from functools import cache
 
 from litestar.config.cors import CORSConfig
 from litestar.config.csrf import CSRFConfig
 from litestar.config.allowed_hosts import AllowedHostsConfig
 from litestar.config.compression import CompressionConfig
-from litestar.config.response_cache import ResponseCacheConfig
+from litestar.config.response_cache import ResponseCacheConfig, default_cache_key_builder
 
 
 from fimbu.conf import settings
 from fimbu.core.exceptions import ImproperlyConfigured
+from fimbu.utils.text import slugify
+
+if TYPE_CHECKING:
+    from typing import Any, Dict, Type
+    from litestar import Request
 
 
 @cache
@@ -185,6 +192,19 @@ def get_compression_config() -> Type[CompressionConfig] | None:
     else: return None
 
 
+def cache_key_builder(request: Request) -> str:
+    """App name prefixed cache key builder.
+
+    Args:
+        request (Request): Current request instance.
+
+    Returns:
+        str: App slug prefixed cache key.
+    """
+
+    return f"{slugify(settings.APP_NAME)}:{default_cache_key_builder(request)}"
+
+
 @cache
 def get_response_cache_config() -> Type[ResponseCacheConfig] | None:
     """
@@ -206,6 +226,7 @@ def get_response_cache_config() -> Type[ResponseCacheConfig] | None:
         _conf['store'] = settings.RESPONSE_CACHE_STORE_NAME
 
     if _conf:
+        _conf['key_builder'] = cache_key_builder
         return ResponseCacheConfig(**_conf)
 
     return None

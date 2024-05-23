@@ -2,10 +2,10 @@
 # It is not intended for manual editing.
 
 [metadata]
-groups = ["default", "shell", "mail"]
+groups = ["default", "shell", "mail", "task", "fullstack"]
 strategy = ["cross_platform"]
 lock_version = "4.4"
-content_hash = "sha256:859e5f314b88f73bf062aba504cc1ba39e093d82110159b27837286dd34ff32b"
+content_hash = "sha256:ef61ab9b469b231784ba05f9fe5dba1e1efda8bdfab62a95b8c77e26034a6204"
 
 [[package]]
 name = "aiosmtplib"
@@ -172,6 +172,16 @@ files = [
 ]
 
 [[package]]
+name = "babel"
+version = "2.15.0"
+requires_python = ">=3.8"
+summary = "Internationalization utilities"
+files = [
+    {file = "Babel-2.15.0-py3-none-any.whl", hash = "sha256:08706bdad8d0a3413266ab61bd6c34d0c28d6e1e7badf40a2cebe67644e2e1fb"},
+    {file = "babel-2.15.0.tar.gz", hash = "sha256:8daf0e265d05768bc6c7a314cf1321e9a123afc328cc635c18622a2f30a04413"},
+]
+
+[[package]]
 name = "black"
 version = "24.4.2"
 requires_python = ">=3.8"
@@ -290,6 +300,20 @@ files = [
 ]
 
 [[package]]
+name = "croniter"
+version = "2.0.5"
+requires_python = "!=3.0.*,!=3.1.*,!=3.2.*,!=3.3.*,>=2.6"
+summary = "croniter provides iteration for datetime object with cron like format"
+dependencies = [
+    "python-dateutil",
+    "pytz>2021.1",
+]
+files = [
+    {file = "croniter-2.0.5-py2.py3-none-any.whl", hash = "sha256:fdbb44920944045cc323db54599b321325141d82d14fa7453bc0699826bbe9ed"},
+    {file = "croniter-2.0.5.tar.gz", hash = "sha256:f1f8ca0af64212fbe99b1bee125ee5a1b53a9c1b433968d8bca8817b79d237f3"},
+]
+
+[[package]]
 name = "cryptography"
 version = "42.0.5"
 requires_python = ">=3.7"
@@ -369,6 +393,19 @@ summary = "DNS toolkit"
 files = [
     {file = "dnspython-2.6.1-py3-none-any.whl", hash = "sha256:5ef3b9680161f6fa89daf8ad451b5f1a33b18ae8a1c6778cdf4b43f08c0a6e50"},
     {file = "dnspython-2.6.1.tar.gz", hash = "sha256:e8f0f9c23a7b7cb99ded64e6c3a6f3e701d78f50c55e002b839dea7225cff7cc"},
+]
+
+[[package]]
+name = "dramatiq"
+version = "1.17.0"
+requires_python = ">=3.8"
+summary = "Background Processing for Python 3."
+dependencies = [
+    "prometheus-client>=0.2",
+]
+files = [
+    {file = "dramatiq-1.17.0-py3-none-any.whl", hash = "sha256:5c103de1b2f1d3dbca4f80fa7d32312f5253234a14a33277d48b7b2ca9498456"},
+    {file = "dramatiq-1.17.0.tar.gz", hash = "sha256:7621280160b2f0dcb9cdd20eeee41e009d42bc7cc75a2c4b9b944c641dadd4df"},
 ]
 
 [[package]]
@@ -558,6 +595,19 @@ files = [
 ]
 
 [[package]]
+name = "jinja2"
+version = "3.1.4"
+requires_python = ">=3.7"
+summary = "A very fast and expressive template engine."
+dependencies = [
+    "MarkupSafe>=2.0",
+]
+files = [
+    {file = "jinja2-3.1.4-py3-none-any.whl", hash = "sha256:bc5dd2abb727a5319567b7a813e6a2e7318c39f4f487cfe6c89c6f9c7d25197d"},
+    {file = "jinja2-3.1.4.tar.gz", hash = "sha256:4a3aee7acbbe7303aede8e9648d13b8bf88a429282aa6122a993f0ac800cb369"},
+]
+
+[[package]]
 name = "litestar"
 version = "2.8.3"
 requires_python = "<4.0,>=3.8"
@@ -574,6 +624,48 @@ dependencies = [
     "rich-click",
     "rich>=13.0.0",
     "typing-extensions",
+]
+files = [
+    {file = "litestar-2.8.3-py3-none-any.whl", hash = "sha256:bef5e8592b1afba24306f9a5834d84cef89826b12f58a97d3099cf49e2f3767d"},
+    {file = "litestar-2.8.3.tar.gz", hash = "sha256:3764eef3885b331bfb15c478a2b9e2bc1980741ff58bd5512d599436f669549c"},
+]
+
+[[package]]
+name = "litestar-saq"
+version = "0.1.21"
+requires_python = ">=3.8"
+summary = "Litestar integration for SAQ"
+dependencies = [
+    "litestar>=2.0.1",
+    "saq>=0.12.0",
+]
+files = [
+    {file = "litestar_saq-0.1.21-py3-none-any.whl", hash = "sha256:f30f3efbcbc8d4a2c33b22ea2c79b008f1a0363231194001c7e34e78a50a78ea"},
+    {file = "litestar_saq-0.1.21.tar.gz", hash = "sha256:2e8121dbc091efb1d7a76f2b7b611a8d178f82da39f2d39143dde08b2210f714"},
+]
+
+[[package]]
+name = "litestar-vite"
+version = "0.1.22"
+requires_python = ">=3.8"
+summary = "Vite plugin for Litestar"
+dependencies = [
+    "litestar[jinja]>=2.4.0",
+]
+files = [
+    {file = "litestar_vite-0.1.22-py3-none-any.whl", hash = "sha256:d950a665d6c261c6ecb2b2be129077abca43e8e464f1a39fc74cad6cd70816ab"},
+    {file = "litestar_vite-0.1.22.tar.gz", hash = "sha256:7062a7b1ed25f60476dde0eb81ec076d14c958b4eff226f33c77b25f60929c70"},
+]
+
+[[package]]
+name = "litestar"
+version = "2.8.3"
+extras = ["jinja"]
+requires_python = "<4.0,>=3.8"
+summary = "Litestar - A production-ready, highly performant, extensible ASGI API Framework"
+dependencies = [
+    "jinja2>=3.1.2",
+    "litestar==2.8.3",
 ]
 files = [
     {file = "litestar-2.8.3-py3-none-any.whl", hash = "sha256:bef5e8592b1afba24306f9a5834d84cef89826b12f58a97d3099cf49e2f3767d"},
@@ -892,6 +984,16 @@ files = [
 ]
 
 [[package]]
+name = "prometheus-client"
+version = "0.20.0"
+requires_python = ">=3.8"
+summary = "Python client for the Prometheus monitoring system."
+files = [
+    {file = "prometheus_client-0.20.0-py3-none-any.whl", hash = "sha256:cde524a85bce83ca359cc837f28b8c0db5cac7aa653a588fd7e84ba061c329e7"},
+    {file = "prometheus_client-0.20.0.tar.gz", hash = "sha256:287629d00b147a32dcb2be0b9df905da599b2d82f80377083ec8463309a4bb89"},
+]
+
+[[package]]
 name = "prompt-toolkit"
 version = "3.0.43"
 requires_python = ">=3.7.0"
@@ -1083,6 +1185,15 @@ files = [
 ]
 
 [[package]]
+name = "pytz"
+version = "2024.1"
+summary = "World timezone definitions, modern and historical"
+files = [
+    {file = "pytz-2024.1-py2.py3-none-any.whl", hash = "sha256:328171f4e3623139da4983451950b28e95ac706e13f3f2630a879749e7a8b319"},
+    {file = "pytz-2024.1.tar.gz", hash = "sha256:2a29735ea9c18baf14b448846bde5a48030ed267578472d8955cd0e7443a9812"},
+]
+
+[[package]]
 name = "pyyaml"
 version = "6.0.1"
 requires_python = ">=3.6"
@@ -1167,6 +1278,19 @@ dependencies = [
 files = [
     {file = "rsa-4.9-py3-none-any.whl", hash = "sha256:90260d9058e514786967344d0ef75fa8727eed8a7d2e43ce9f4bcf1b536174f7"},
     {file = "rsa-4.9.tar.gz", hash = "sha256:e38464a49c6c85d7f1351b0126661487a7e0a14a50f1675ec50eb34d4f20ef21"},
+]
+
+[[package]]
+name = "saq"
+version = "0.12.5"
+summary = "Distributed Python job queue with asyncio and redis"
+dependencies = [
+    "croniter>=0.3.18",
+    "redis<6.0,>=4.2",
+]
+files = [
+    {file = "saq-0.12.5-py3-none-any.whl", hash = "sha256:5499683b3272151fe30369e95a85319b8baabad220d25609d2c5836c61fee70e"},
+    {file = "saq-0.12.5.tar.gz", hash = "sha256:d1a1452311bb40b2a76460e76fb3cd53e2ba4046611aa9737b09e5391d9cff2d"},
 ]
 
 [[package]]

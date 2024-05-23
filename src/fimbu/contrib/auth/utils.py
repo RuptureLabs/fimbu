@@ -87,3 +87,8 @@ def has_custom_model() -> bool:
 def installed_native_auth() -> bool:
     """Check if settings.INSTALLED_APPs contains fimbu.contrib.auth"""
     return 'fimbu.contrib.auth' in settings.INSTALLED_APPS
+
+
+def user_is_verified(user: UserT) -> bool:
+    """Check if user is verified"""
+    return (settings.AUTH_CHECK_VERIFIED and user.is_verified) if settings.AUTH_CHECK_VERIFIED else True

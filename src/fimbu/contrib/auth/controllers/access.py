@@ -22,7 +22,7 @@ from fimbu.core.exceptions import ImproperlyConfiguredException
 from fimbu.contrib.auth.service import UserService, UserServiceType
 from fimbu.contrib.schema import Message
 from fimbu.utils.text import slugify
-from fimbu.contrib.auth.utils import get_user_model, get_auth_backend
+from fimbu.contrib.auth.utils import get_user_model, get_auth_backend, user_is_verified
 from fimbu.contrib.auth.utils import get_path
 
 
@@ -66,7 +66,7 @@ class AccessController(Controller):
         auth_backend = get_auth_backend(request.app)
 
         if isinstance(auth_backend, (JWTAuth, JWTCookieAuth, OAuth2PasswordBearerAuth)):
-            return await self.login_jwt(data, service, request)
+            return await self.login_jwt(data, service, request, auth_backend)
         elif isinstance(auth_backend, SessionAuth):
             return await self.login_session(data, service, request)
         else:
@@ -147,13 +147,13 @@ class AccessController(Controller):
         if user is None:
             raise NotAuthorizedException(detail="login failed, invalid input")
 
-        if user.is_verified is False:
-            raise PermissionDeniedException(detail="not verified")
+        if not user_is_verified(user):
+            raise PermissionDeniedException(detail="User not verified")
         
         if user.is_active is False:
-            raise PermissionDeniedException(detail="not active")
+            raise PermissionDeniedException(detail="User not active")
         
-        return auth_backend.login(identifier=str(user.id), response_body=cast(UserT, user))
+        return auth_backend.login(identifier=str(user.id), send_token_as_response_body=True)
     
 
     async def login_session(self,
@@ -165,6 +165,12 @@ class AccessController(Controller):
         if user is None:
             request.clear_session()
             raise NotAuthorizedException(detail="login failed, invalid input")
+
+        if not user_is_verified(user):
+            raise PermissionDeniedException(detail="User not verified")
+        
+        if user.is_active is False:
+            raise PermissionDeniedException(detail="User not active")
 
         request.set_session({"user_id": user.id})
         return service.to_schema(user, schema_type=User)

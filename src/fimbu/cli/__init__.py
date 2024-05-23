@@ -34,7 +34,7 @@ from fimbu.core.utils import setup_fimbu
 
 setup_fimbu() # setup fimbu cli
 
-from fimbu.cli._utils import FimbuExtensionGroup
+from fimbu.cli._utils import FimbuExtensionGroup, FimbuGroup
 from fimbu.cli.env import FimbuEnv
 from fimbu.conf import settings
 
@@ -48,6 +48,7 @@ T = typing.TypeVar("T")
 
 __all__ = [
     "fimbu_cli",
+    "FimbuGroup",
 ]
 
 
