@@ -1,10 +1,12 @@
 from __future__ import annotations
 
-from typing import TypeVar, Protocol, Any, List, runtime_checkable
+from typing import TypeVar, ClassVar, Protocol, Any, List, runtime_checkable
 from sqlalchemy import RowMapping  # noqa: TCH002
 from typing_extensions import TypeAlias
 
-from fimbu.db.filters import FilterTypes
+from edgy.core.db.models.managers import Manager
+from edgy.core.db.models.metaclasses import MetaInfo
+
 
 from litestar import Litestar
 from fimbu.db import Model
@@ -44,8 +46,17 @@ except ImportError:  # pragma: nocover
         """Placeholder Implementation"""
 
 
+@runtime_checkable
+class ModelProtocol(Protocol):
+    """
+    Protocol for models
+    """
+    query: ClassVar[Manager] = Manager()
+    meta: ClassVar[MetaInfo] = MetaInfo(None)
+
+
+
 ModelDictT: TypeAlias = "dict[str, Any] | ModelT"
 ModelDictListT: TypeAlias = "list[ModelT | dict[str, Any]] | list[dict[str, Any]]"
-FilterTypeT = TypeVar("FilterTypeT", bound=FilterTypes)
 ModelDTOT = TypeVar("ModelDTOT", bound="Struct | BaseModel")
 RowMappingT = TypeVar("RowMappingT", bound="RowMapping")

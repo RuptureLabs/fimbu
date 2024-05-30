@@ -1,6 +1,5 @@
-from typing import Coroutine, Any
+from typing import Coroutine, Any, List
 from uuid import UUID
-from datetime import datetime
 from fimbu.db import Model, fields, CASCADE
 from fimbu.db.utils import get_db_connection
 from fimbu.db.mixins import UUIDMixin, UserMixin
@@ -9,16 +8,6 @@ from fimbu.utils.text import slugify
 
 
 _, registry = get_db_connection()
-
-
-class User(UserMixin):
-    """User model"""
-    username: str = fields.CharField(max_length=75)
-
-
-    class Meta:
-        registry = registry
-        abstract = has_custom_model()
 
 
 class Role(UUIDMixin):
@@ -39,22 +28,18 @@ class Role(UUIDMixin):
 
 
 
-UserModel = get_user_model()
+class User(UserMixin):
+    """User model"""
+    username: str = fields.CharField(max_length=75)
+    roles = fields.ManyToManyField(Role, related_name="users",)
 
-class UserRole(UUIDMixin):
-    user: UUID = fields.ForeignKey(
-        to=UserModel,
-        related_name="user_roles",
-    )
-    role: UUID = fields.ForeignKey(
-        to=Role,
-        related_name="role_users",
-    )
-    assigned_at: datetime = fields.DateTimeField(auto_now=True)
 
     class Meta:
         registry = registry
-        abstract = not installed_native_auth()
+        abstract = has_custom_model()
+
+
+UserModel = get_user_model()
 
 
 class UserOauthAccount(UUIDMixin):

@@ -52,6 +52,8 @@ class AuthPlugin(InitPluginProtocol, CLIPluginProtocol):
         app_config.exception_handlers.update(exception_handlers)
         app_config.state.update({"auth_config": self._config})
 
+        self._config.auth_store = app_config.stores.get(settings.AUTH_STORE_KEY)
+
         return app_config
 
     def on_cli_init(self, cli: Group) -> None:

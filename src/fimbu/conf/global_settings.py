@@ -32,14 +32,8 @@ MIDDLEWARE_FROM_FACTORY_BEFORE: str = False
 ASGI_APPLICATION: str = 'fimbu.apps.main:app'
 
 
-DATABASES: dict[str, Any] = [
-    {
-        "primary": True,
-        "engine": "sqlite",
-        "database": "database.db",
-    },
-]
-
+DATABASES: dict[str, Any] | list[dict[str, Any]] | None = None
+USE_IN_MEMORY_DATABASE: bool = False
 
 # Templates
 
@@ -161,6 +155,7 @@ AUTH_GUARDS = []
 AUTH_CHECK_VERIFIED = True
 AUTH_TAGS = []
 AUTH_PREFIX = "/auth"
+AUTH_STORE_KEY = 'auth_store'
 AUTH_EXCLUDE_PATHS = ['/schema',]
 USER_SERVICE_CLASS = 'fimbu.contrib.auth.service.UserService'
 USERS_REPOSITORY = 'fimbu.contrib.auth.adapters.repository.UserRepository'

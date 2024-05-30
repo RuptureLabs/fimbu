@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-from datetime import datetime
 from typing import TYPE_CHECKING, Any, Protocol, TypeVar, runtime_checkable
 from fimbu.core.types import T
 
@@ -9,7 +8,7 @@ if TYPE_CHECKING:
     from uuid import UUID
     
 
-__all__ = ["RoleProtocol", "UserProtocol", "UserRoleProtocol", "RoleT", "UserT", "UserRoleT"]
+__all__ = ["RoleProtocol", "UserProtocol", "RoleT", "UserT"]
 
 
 
@@ -31,20 +30,11 @@ class UserProtocol(Protocol[T]):
     password_hash: str
     is_active: bool
     is_verified: bool
+    roles: list[RoleProtocol]
 
     def __init__(*args: Any, **kwargs: Any) -> None:
         ...
 
 
-@runtime_checkable
-class UserRoleProtocol(Protocol):
-    """The base SQLAlchemy user type."""
-
-    role: RoleProtocol
-    user: UserProtocol
-    assigned_at: datetime
-
-
 RoleT = TypeVar("RoleT", bound="RoleProtocol")
 UserT = TypeVar("UserT", bound="UserProtocol")
-UserRoleT = TypeVar("UserRoleT", bound="UserRoleProtocol")

@@ -15,11 +15,8 @@ __all__ = [
 
 if TYPE_CHECKING:
     from litestar.contrib.jwt import JWTAuth, JWTCookieAuth
-    from litestar.contrib.pydantic import PydanticDTO
-    from litestar.dto import DataclassDTO, MsgspecDTO
     from litestar.middleware.session.base import BaseBackendConfig
-    from litestar.types import Guard
-
+    from litestar.stores.redis import RedisStore
     from fimbu.contrib.auth.service import BaseUserService
 
 
@@ -41,8 +38,11 @@ class AuthConfig(Generic[UserT]):
     user_repository_class: type[UserRepository] = UserRepository
     """The user repository class to use."""
     auth_exclude_paths: list[str] = field(default_factory=lambda: ["/schema"])
-    auth_backend: type[JWTAuth | JWTCookieAuth | SessionAuth] | None = None
     """Paths to be excluded from authentication checks."""
+    auth_backend: type[JWTAuth | JWTCookieAuth | SessionAuth] | None = None
+    """Authentication backend"""
+    auth_store : RedisStore | None = None
+    """Auth store used for cache strategy"""
     hash_schemes: list[str] = field(default_factory=lambda: ["argon2"])
     """Schemes to use for password encryption.
 

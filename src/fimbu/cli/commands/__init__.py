@@ -304,15 +304,36 @@ def shell(env: MigrationEnv) -> None:
     return None
 
 
+def disable_logging():
+    """Disable logging"""
+    import logging
+    original_log_handlers = logging.getLogger().handlers[:]
+
+    for handler in original_log_handlers:
+        logging.getLogger().removeHandler(handler)
+
+    return original_log_handlers
+
+def enable_logging(handlers):
+    """Enable logging"""
+    import logging
+
+    for handler in handlers:
+        logging.getLogger().addHandler(handler)
+
+
+
 async def run_shell(app: Any, lifespan: Any, registry: Registry) -> None:
     """Executes the database shell connection"""
 
     async with lifespan():
+        handlers = disable_logging()
         from edgy.cli.operations.shell.ptpython import get_ptpython
 
         ptpython = get_ptpython(app=app, registry=registry)
         nest_asyncio.apply()
         ptpython()
+        enable_logging(handlers)
 
 
 

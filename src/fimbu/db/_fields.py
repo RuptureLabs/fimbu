@@ -17,7 +17,7 @@ class GUIDField(UUIDField):
         return GUID(**kwargs)
 
 
-class JsonBField(FieldFactory, str):
+class JsonBField(FieldFactory, dict):
     _type = JsonB
 
     @classmethod

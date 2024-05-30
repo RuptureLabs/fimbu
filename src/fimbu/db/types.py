@@ -18,7 +18,7 @@ from sqlalchemy.types import (
 )
 from sqlalchemy.types import JSON as _JSON
 
-from fimbu.db._serialization import decode_json, encode_json
+from fimbu.utils import decode_json, encode_json
 from fimbu.crypto.backends import EncryptionBackend, FernetBackend
 
 if TYPE_CHECKING:
@@ -186,14 +186,6 @@ JsonB = (
 """A JSON type that uses  native ``JSONB`` where possible and ``Binary`` or ``Blob`` as
 an alternative.
 """
-
-
-
-
-
-
-if TYPE_CHECKING:
-    from sqlalchemy.engine import Dialect
 
 
 class EncryptedString(TypeDecorator):

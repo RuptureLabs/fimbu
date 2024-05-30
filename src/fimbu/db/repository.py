@@ -1,14 +1,222 @@
-from typing import Any, Generic, Collection
-from edgy import ObjectNotFound
+from __future__ import annotations
+
+import abc
+from typing import Any, Generic, Collection, Type
+from datetime import datetime
+from edgy import ObjectNotFound, QuerySet, or_
 from litestar.repository.abc import AbstractAsyncRepository
 from litestar.repository.filters import FilterTypes
 from fimbu.core.types import ModelT, T
 
 
+from sqlalchemy.orm import InstrumentedAttribute
+from sqlalchemy.sql import ColumnElement
 
-__all__ = ["Repository"]
+from fimbu.db.exceptions import RepositoryError
+from fimbu.db.filters import (
+    BeforeAfter,
+    CollectionFilter,
+    FilterTypes,
+    LimitOffset,
+    NotInCollectionFilter,
+    NotInSearchFilter,
+    OnBeforeAfter,
+    OrderBy,
+    SearchFilter,
+    AndFilter,
+    OrFilter,
+)
+from fimbu.db.utils import get_instrumented_attr
 
-class Repository(AbstractAsyncRepository[ModelT], Generic[ModelT]):
+
+
+__all__ = [
+    "AsyncRepository",
+    "FilterableRepository",
+]
+
+
+
+class FilterableRepository(Generic[ModelT]):
+    model_type: type[ModelT]
+
+    def _apply_limit_offset_pagination(
+        self,
+        limit: int,
+        offset: int,
+        queryset: QuerySet[ModelT],
+    ) -> QuerySet[ModelT]:
+        return queryset.limit(limit).offset(offset)
+
+    def _apply_filters(
+        self,
+        *filters: FilterTypes | ColumnElement[bool], # type: ignore
+        apply_pagination: bool = True,
+        queryset: QuerySet[ModelT],
+    ) -> QuerySet[ModelT]:
+        """Apply filters to a select statement.
+
+        Args:
+            *filters: filter types to apply to the query
+            apply_pagination: applies pagination filters if true
+            queryset: chained queryset to apply filters
+
+        Keyword Args:
+            select: select to apply filters against
+
+        Returns:
+            The Queryset with filters applied.
+        """
+
+        order_by_filters: list[OrderBy] = []
+        pagination_filter: LimitOffset = None
+
+        for filter_ in filters:
+            if isinstance(filter_, (LimitOffset,)):
+                if apply_pagination:
+                    pagination_filters = filter_
+
+            elif isinstance(filter_, (BeforeAfter,)):
+                queryset = self._filter_on_datetime_field(
+                    field_name=filter_.field_name,
+                    before=filter_.before,
+                    after=filter_.after,
+                    queryset=queryset,
+                )
+            elif isinstance(filter_, (OnBeforeAfter,)):
+                queryset = self._filter_on_datetime_field(
+                    field_name=filter_.field_name,
+                    on_or_before=filter_.on_or_before,
+                    on_or_after=filter_.on_or_after,
+                    queryset=queryset,
+                )
+
+            elif isinstance(filter_, (NotInCollectionFilter,)):
+                if filter_.values is not None:
+                    queryset = self._filter_not_in_collection(
+                        filter_.field_name,
+                        filter_.values,
+                        queryset=queryset,
+                    )
+
+            elif isinstance(filter_, (CollectionFilter,)):
+                if filter_.values is not None:
+                    queryset = self._filter_in_collection(filter_.field_name, filter_.values, queryset=queryset)
+
+            elif isinstance(filter_, (OrderBy,)):
+                order_by_filters.append(filter_)
+
+            elif isinstance(filter_, (SearchFilter,)):
+                queryset = self._filter_by_like(
+                    queryset,
+                    filter_.field_name,
+                    value=filter_.value,
+                    ignore_case=bool(filter_.ignore_case),
+                )
+            elif isinstance(filter_, (NotInSearchFilter,)):
+                queryset = self._filter_by_not_like(
+                    queryset,
+                    filter_.field_name,
+                    value=filter_.value,
+                    ignore_case=bool(filter_.ignore_case),
+                )
+
+            elif isinstance(filter_, (AndFilter, OrFilter)):
+                queryset = queryset.filter(filter_._expression)
+
+            else:
+                msg = f"Unexpected filter: {filter_}"  # type: ignore[unreachable]
+                raise RepositoryError(msg)
+            
+
+        if order_by_filters:
+            queryset._order_by
+            fieldnames = [f.field_name if f.sort_order == 'asc' else f"-{f.field_name}" for f in order_by_filters]
+            queryset = self._order_by(queryset, fieldnames)
+
+        if pagination_filters:
+            if not queryset._order_by:
+                pass # TODO: LOG Warning
+
+            queryset = self._apply_limit_offset_pagination(
+                pagination_filter.limit, 
+                pagination_filter.offset,
+                queryset
+            )
+
+        return queryset
+
+    def _filter_in_collection(
+        self,
+        field_name: str | InstrumentedAttribute,
+        values: abc.Collection[Any],
+        queryset: QuerySet[ModelT],
+    ) -> QuerySet[ModelT]:
+        if not values:
+            return queryset.filter(or_()) # returns nothing
+        return queryset.filter(**{f'{field_name}__in': values})
+
+    def _filter_not_in_collection(
+        self,
+        field_name: str,
+        values: abc.Collection[Any],
+        queryset: QuerySet[ModelT],
+    ) -> QuerySet[ModelT]:
+        if not values:
+            return queryset.filter(or_()) # returns nothing
+        return queryset.exclude(**{f'{field_name}__in': values})
+
+    def _filter_on_datetime_field(
+        self,
+        field_name: str,
+        queryset: QuerySet[ModelT] | None = None,
+        before: datetime | None = None,
+        after: datetime | None = None,
+        on_or_before: datetime | None = None,
+        on_or_after: datetime | None = None,
+    ) -> QuerySet[ModelT]:
+        lookup = {}
+        if before is not None:
+            lookup[f'{field_name}__lt'] = before
+        if after is not None:
+            lookup[f'{field_name}__gt'] = after
+        if on_or_before is not None:
+            lookup[f'{field_name}__lte'] = on_or_before
+        if on_or_after is not None:
+            lookup[f'{field_name}__gte'] = on_or_after
+        return queryset.filter(**lookup)
+
+    def _filter_by_like(
+        self,
+        queryset: QuerySet[ModelT],
+        field_name: str,
+        value: str,
+        ignore_case: bool,
+    ) -> QuerySet[ModelT]:
+        lookup = f'{field_name}__icontains' if ignore_case else f'{field_name}__contains'
+        return queryset.filter(**{lookup: value})
+
+    def _filter_by_not_like(
+        self,
+        queryset: QuerySet[ModelT],
+        field_name: str,
+        value: str,
+        ignore_case: bool,
+    ) -> QuerySet[ModelT]:
+        lookup = f'{field_name}__icontains' if ignore_case else f'{field_name}__contains'
+        return queryset.exclude(**{lookup: value})
+
+    def _order_by(
+        self,
+        queryset: QuerySet[ModelT],
+        field_names: str | list[str]
+    ) -> QuerySet[ModelT]:
+        field_names = field_names if isinstance(field_names, list) else [field_names]
+        return queryset.order_by(*field_names)
+
+
+
+class AsyncRepository(AbstractAsyncRepository[ModelT], FilterableRepository[ModelT], Generic[ModelT]):
     """The base repository class."""
 
     model_type: type[ModelT]
@@ -29,7 +237,7 @@ class Repository(AbstractAsyncRepository[ModelT], Generic[ModelT]):
         return await self.model_type.query.bulk_create(data)
     
 
-    async def count(self, *filters: Any, **kwargs: Any) -> int:
+    async def count(self, *filters: FilterTypes, **kwargs: Any) -> int: # type: ignore
         """Get the count of records returned by a query.
 
         Args:
@@ -39,8 +247,10 @@ class Repository(AbstractAsyncRepository[ModelT], Generic[ModelT]):
         Returns:
             The count of instances
         """
-        return await self.model_type.query.filter(**kwargs).count()
+        queryset = self._apply_filters(filters, apply_pagination=False, queryset=self.model_type.query)
+        return await queryset.filter(**kwargs).count()
     
+
     async def delete(self, item_id: Any) -> ModelT:
         """Delete instance identified by ``item_id``.
 
@@ -83,8 +293,8 @@ class Repository(AbstractAsyncRepository[ModelT], Generic[ModelT]):
             True if the instance was found.  False if not found.
 
         """
-        
-        return self.model_type.query.exists(**kwargs)
+        queryset = self._apply_filters(filters, apply_pagination=False, queryset=self.model_type.query)
+        return await queryset.exists(**kwargs)
 
 
     async def get(self, item_id: Any, **kwargs: Any) -> ModelT:
@@ -215,7 +425,7 @@ class Repository(AbstractAsyncRepository[ModelT], Generic[ModelT]):
         """
 
 
-    async def list_and_count(self, *filters: FilterTypes, **kwargs: Any) -> tuple[list[ModelT], int]:
+    async def list_and_count(self, *filters: FilterTypes, **kwargs: Any) -> tuple[list[ModelT], int]: # type: ignore
         """List records with total count.
 
         Args:
@@ -225,6 +435,17 @@ class Repository(AbstractAsyncRepository[ModelT], Generic[ModelT]):
         Returns:
             a tuple containing The list of instances, after filtering applied, and a count of records returned by query, ignoring pagination.
         """
+        result_query = self._apply_filters(
+            filters,
+            apply_pagination=False,
+            queryset=self.model_type.query
+        ).filter(**kwargs)
+        result_query._order_by = None
+
+        count = await result_query.count()
+        result = await result_query.all()
+        return result, count
+
 
     
     async def list(self, *filters: Any, **kwargs: Any) -> list[ModelT]:
@@ -237,7 +458,8 @@ class Repository(AbstractAsyncRepository[ModelT], Generic[ModelT]):
         Returns:
             The list of instances, after filtering applied
         """
-        return await self.model_type.query.filter(*filters, **kwargs).all()
+        queryset = self._apply_filters(filters, apply_pagination=True, queryset=self.model_type.query)
+        return await queryset.filter(**kwargs).all()
 
 
     @staticmethod

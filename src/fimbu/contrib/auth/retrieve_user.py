@@ -3,9 +3,9 @@ from __future__ import annotations
 from typing import TYPE_CHECKING, Any
 from uuid import UUID
 
-from fimbu.conf import settings
 from fimbu.db.exceptions import ObjectNotFound
 from fimbu.contrib.auth.utils import get_auth_plugin, user_is_verified
+from fimbu.contrib.auth.cache import retrieve_user_from_cache
 
 __all__ = ["jwt_retrieve_user_handler", "session_retrieve_user_handler"]
 
@@ -25,15 +25,15 @@ async def session_retrieve_user_handler(session: dict[str, Any], connection: ASG
         connection: The ASGI connection.
     """
 
-    litestar_users_config = get_auth_plugin(connection.app)._config
-    repository = litestar_users_config.user_repository_class(
-        model_type=litestar_users_config.user_model
+    auth_config = get_auth_plugin(connection.app)._config
+    repository = auth_config.user_repository_class(
+        model_type=auth_config.user_model
     )
     try:
         user_id = session.get("user_id")
         if user_id is None:
             return None
-        user = await repository.get(UUID(user_id))
+        user = await retrieve_user_from_cache(UUID(user_id), auth_config)
 
         if user.is_active and user_is_verified(user):
             return user  # type: ignore[no-any-return]
@@ -50,12 +50,12 @@ async def jwt_retrieve_user_handler(token: Token, connection: ASGIConnection) ->
         connection: The ASGI connection.
     """
 
-    litestar_users_config = get_auth_plugin(connection.app)._config
-    repository = litestar_users_config.user_repository_class(
-        model_type=litestar_users_config.user_model
+    auth_config = get_auth_plugin(connection.app)._config
+    repository = auth_config.user_repository_class(
+        model_type=auth_config.user_model
     )
     try:
-        user = await repository.get(UUID(token.sub))
+        user = await retrieve_user_from_cache(UUID(token.sub), auth_config)
 
         if user.is_active and user_is_verified(user):
             return user  # type: ignore[no-any-return]

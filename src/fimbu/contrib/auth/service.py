@@ -7,13 +7,13 @@ from uuid import UUID
 from jose import JWTError
 from litestar.contrib.jwt.jwt_token import Token
 from litestar.exceptions import ImproperlyConfiguredException
-from fimbu.contrib.auth.models import Role, UserRole
+from fimbu.contrib.auth.models import Role
 from fimbu.contrib.auth.protocols import RoleT, UserT
 from fimbu.contrib.auth.exceptions import InvalidTokenException
 from fimbu.utils.crypto import PasswordManager
 from fimbu.db import ResultConverter
 
-from fimbu.contrib.auth.repository import RoleRepository, UserRepository, UserRoleRepository
+from fimbu.contrib.auth.repository import RoleRepository, UserRepository
 
 from fimbu.db.exceptions import DuplicateRecordError, ObjectNotFound
 
@@ -47,7 +47,6 @@ class BaseUserService(Generic[UserT], ResultConverter):  # pylint: disable=R0904
         """
         self.user_repository = user_repository
         self.role_repository = RoleRepository(Role)
-        self.user_role_repository = UserRoleRepository(UserRole)
         self.secret = secret
         self.password_manager = PasswordManager(hash_schemes=hash_schemes)
         self.user_model = self.user_repository.model_type
@@ -429,11 +428,6 @@ class BaseUserService(Generic[UserT], ResultConverter):  # pylint: disable=R0904
             raise ImproperlyConfiguredException("roles have not been configured")
         return await self.role_repository.delete(id_)
 
-
-    async def get_user_role(self, user_id: "UUID", role_id: "UUID") -> UserRole:
-        if self.user_role_repository is None:
-            raise ImproperlyConfiguredException("user roles have not been configured")
-        return await self.user_role_repository.get(user_id, role_id)
     
     async def assign_role(self, user: "UUID" | UserT, role: "UUID" | RoleT) -> UserT:
         """Add a role to a user.
@@ -442,30 +436,29 @@ class BaseUserService(Generic[UserT], ResultConverter):  # pylint: disable=R0904
             user_id: UUID of the user to receive the role.
             role_id: UUID of the role to add to the user.
         """
-        if self.user_role_repository is None:
-            raise ImproperlyConfiguredException("roles have not been configured")
         
         if isinstance(user, UUID):
             user = await self.get_user(user)
         if isinstance(role, UUID):
             role = await self.get_role(role)
 
-        # if not hasattr(user, "roles"):
-        #     raise ImproperlyConfiguredException("roles have not been configured")
+        if not hasattr(user, "roles"):
+            raise ImproperlyConfiguredException("roles have not been configured")
 
-        # if isinstance(user.roles, list) and role in user.roles:  # pyright: ignore
-        #     raise DuplicateRecordError(f"user already has role '{role.name}'")
-        return await self.user_role_repository.assign_role(user, role)
+        if isinstance(user.roles, list) and role in user.roles:  # pyright: ignore
+            raise DuplicateRecordError(f"user already has role '{role.name}'")
+        
+        return await self.user_repository.assign_role(user, role)
 
-    async def revoke_role(self, user_id: "UUID", role_id: "UUID") -> UserT:
+
+    async def revoke_role(self, user_id: "UUID", role_id: "UUID") -> None:
         """Revoke a role from a user.
 
         Args:
             user_id: UUID of the user to revoke the role from.
             role_id: UUID of the role to revoke.
         """
-        if self.role_repository is None:
-            raise ImproperlyConfiguredException("roles have not been configured")
+        
         user = await self.get_user(user_id)
         role = await self.get_role(role_id)
 
@@ -474,7 +467,8 @@ class BaseUserService(Generic[UserT], ResultConverter):  # pylint: disable=R0904
 
         if isinstance(user.roles, list) and role not in user.roles:  # pyright: ignore
             raise DuplicateRecordError(f"user does not have role '{role.name}'")
-        return await self.role_repository.revoke_role(user, role)
+        
+        return await self.user_repository.revoke_role(user, role)
 
 
 UserServiceType = TypeVar("UserServiceType", bound=BaseUserService)

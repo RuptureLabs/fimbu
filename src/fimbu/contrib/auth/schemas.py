@@ -2,9 +2,11 @@ from __future__ import annotations
 
 from datetime import datetime  # noqa: TCH003
 from uuid import UUID  # noqa: TCH003
+from dataclasses import dataclass
 
 import msgspec
 
+from fimbu.contrib.auth.protocols import UserT
 from fimbu.contrib.schema import BaseStruct
 
 __all__ = (
@@ -98,3 +100,10 @@ class UserRoleRevoke(BaseStruct):
     """User role revoke ."""
 
     email: str
+
+
+
+@dataclass
+class UserRoles:
+    base : UserT
+    roles: list[str]

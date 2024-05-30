@@ -2,16 +2,16 @@ from __future__ import annotations
 
 from typing import Any, Generic
 from fimbu.core.exceptions import ImproperlyConfigured
-from fimbu.contrib.auth.models import Role, UserRole
+from fimbu.contrib.auth.models import Role
 from fimbu.contrib.auth.protocols import RoleT, UserT
-from fimbu.db.repository import Repository
+from fimbu.db.repository import AsyncRepository
 
 
-__all__ = ["RoleRepository", "UserRepository", "UserRoleRepository"]
+__all__ = ["RoleRepository", "UserRepository"]
 
 
 
-class UserRepository(Repository[UserT], Generic[UserT]):
+class UserRepository(AsyncRepository[UserT], Generic[UserT]):
     """Implementation of user persistence layer."""
 
     def __init__(self, model_type: type[UserT]) -> None:
@@ -31,19 +31,6 @@ class UserRepository(Repository[UserT], Generic[UserT]):
         return user
     
 
-
-class RoleRepository(Repository[Role]):
-    """Role Repository."""
-
-    model_type = Role
-
-
-class UserRoleRepository(Repository[UserRole]):
-    """User Role Repository."""
-
-    model_type = UserRole
-
-
     async def assign_role(self, user: UserT, role: RoleT) -> UserT:
         """Add a role to a user.
 
@@ -51,9 +38,7 @@ class UserRoleRepository(Repository[UserRole]):
             user: The user to receive the role.
             role: The role to add to the user.
         """
-        if not hasattr(user, "roles"):
-            raise ImproperlyConfigured("User.roles is not set")
-        user.roles.append(role)
+        user.roles.add(role)
         return user
 
     async def revoke_role(self, user: UserT, role: RoleT) -> UserT:
@@ -63,7 +48,12 @@ class UserRoleRepository(Repository[UserRole]):
             user: The user to revoke the role from.
             role: The role to revoke from the user.
         """
-        if not hasattr(user, "roles"):
-            raise ImproperlyConfigured("User.roles is not set")
         user.roles.remove(role)
         return user
+
+
+class RoleRepository(AsyncRepository[Role]):
+    """Role Repository."""
+
+    model_type = Role
+    

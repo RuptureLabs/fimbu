@@ -10,7 +10,6 @@ from litestar.stores.registry import StoreRegistry
 from redis.asyncio import Redis
 from fimbu.conf import settings
 from fimbu.utils.text import slugify
-from fimbu.contrib.redis import get_redis
 
 
 if TYPE_CHECKING:
