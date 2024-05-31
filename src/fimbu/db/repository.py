@@ -1,17 +1,21 @@
 from __future__ import annotations
 
 import abc
-from typing import Any, Generic, Collection, Type
+from typing import Any, Generic, Collection
+import string
+import random
 from datetime import datetime
 from edgy import ObjectNotFound, QuerySet, or_
 from litestar.repository.abc import AbstractAsyncRepository
 from litestar.repository.filters import FilterTypes
+from sqlalchemy import text
 from fimbu.core.types import ModelT, T
 
 
 from sqlalchemy.orm import InstrumentedAttribute
 from sqlalchemy.sql import ColumnElement
 
+from fimbu.utils.text import slugify
 from fimbu.db.exceptions import RepositoryError
 from fimbu.db.filters import (
     BeforeAfter,
@@ -26,7 +30,6 @@ from fimbu.db.filters import (
     AndFilter,
     OrFilter,
 )
-from fimbu.db.utils import get_instrumented_attr
 
 
 
@@ -216,7 +219,7 @@ class FilterableRepository(Generic[ModelT]):
 
 
 
-class AsyncRepository(AbstractAsyncRepository[ModelT], FilterableRepository[ModelT], Generic[ModelT]):
+class AsyncRepository(AbstractAsyncRepository[ModelT], FilterableRepository[ModelT]):
     """The base repository class."""
 
     model_type: type[ModelT]
@@ -224,6 +227,7 @@ class AsyncRepository(AbstractAsyncRepository[ModelT], FilterableRepository[Mode
     def __init__(self, model_type: type[ModelT], **kwargs: Any) -> None:
         """Repository constructors accept arbitrary kwargs."""
         self.model_type = model_type
+        self.id_attribute = model_type.pkname
         super().__init__(**kwargs)
 
 
@@ -309,6 +313,7 @@ class AsyncRepository(AbstractAsyncRepository[ModelT], FilterableRepository[Mode
 
         Raises:
             ObjectNotFound: If no instance found identified by ``item_id``.
+            MultipleObjectsReturned: If multiple instances found identified by ``item_id``.
         """
         kwargs[self.id_attribute] = item_id
         return await self.model_type.query.get(**kwargs)
@@ -325,6 +330,7 @@ class AsyncRepository(AbstractAsyncRepository[ModelT], FilterableRepository[Mode
 
         Raises:
             ObjectNotFound: If no instance found identified by ``kwargs``.
+            MultipleObjectsReturned: If multiple instances found identified by ``kwargs``.
         """
         return await self.model_type.query.get(**kwargs)
 
@@ -350,10 +356,7 @@ class AsyncRepository(AbstractAsyncRepository[ModelT], FilterableRepository[Mode
         Returns:
             The retrieved instance or None.
         """
-        try:
-            return await self.get_one(**kwargs)
-        except ObjectNotFound:
-            return None
+        return await self.model_type.query.filter(**kwargs).first()
 
 
     async def update(self, data: ModelT, **kwargs: Any) -> ModelT:
@@ -369,7 +372,7 @@ class AsyncRepository(AbstractAsyncRepository[ModelT], FilterableRepository[Mode
         return await data.update(**kwargs)
 
 
-    async def update_many(self, data: list[ModelT]) -> list[ModelT]:
+    async def update_many(self, data: list[ModelT]) -> None:
         """Update multiple instances with the attribute values present on instances in ``data``.
 
         Args:
@@ -385,7 +388,7 @@ class AsyncRepository(AbstractAsyncRepository[ModelT], FilterableRepository[Mode
         return await self.model_type.query.bulk_update(data)
     
 
-    async def upsert(self, **kwargs: Any) -> ModelT:
+    async def upsert(self, **kwargs: Any) -> tuple[ModelT, bool]:
         """Update or create instance.
 
         Updates instance with the attribute values present on ``data``, or creates a new instance if
@@ -423,6 +426,7 @@ class AsyncRepository(AbstractAsyncRepository[ModelT], FilterableRepository[Mode
         Raises:
             NotFoundError: If no instance found with same identifier as ``data``.
         """
+        raise NotImplementedError("Upsert many is not implemented")
 
 
     async def list_and_count(self, *filters: FilterTypes, **kwargs: Any) -> tuple[list[ModelT], int]: # type: ignore
@@ -447,7 +451,6 @@ class AsyncRepository(AbstractAsyncRepository[ModelT], FilterableRepository[Mode
         return result, count
 
 
-    
     async def list(self, *filters: Any, **kwargs: Any) -> list[ModelT]:
         """Get a list of instances, optionally filtered.
 
@@ -477,6 +480,21 @@ class AsyncRepository(AbstractAsyncRepository[ModelT], FilterableRepository[Mode
         return item_or_none
 
 
+    @classmethod
+    async def check_health(cls) -> bool:
+        """Perform a health check on the database.
+
+        Args:
+            session: through which we run a check statement
+
+        Returns:
+            ``True`` if healthy.
+        """
+        
+        await cls.model_type.query.database.execute(text("SELECT 1"))
+        return await cls.model_type.query.database.fetch_val() == 1
+
+    
     @classmethod
     def get_id_attribute_value(cls, item: ModelT | type[ModelT], id_attribute: str | None = None) -> Any:
         """Get value of attribute named as :attr:`id_attribute <AbstractAsyncRepository.id_attribute>` on ``item``.
@@ -510,3 +528,46 @@ class AsyncRepository(AbstractAsyncRepository[ModelT], FilterableRepository[Mode
     
     def filter_collection_by_kwargs(self, collection: Collection[ModelT], /, **kwargs: Any) -> Collection[ModelT]:
         return super().filter_collection_by_kwargs(collection, **kwargs)
+
+class AsyncSlugRepository(AsyncRepository[ModelT]):
+    """Extends the repository to include slug model features.."""
+
+    async def get_by_slug(
+        self,
+        slug: str,
+        **kwargs: Any,
+    ) -> ModelT | None:
+        """Select record by slug value."""
+        return await self.get_one_or_none(slug=slug)
+
+    async def get_available_slug(
+        self,
+        value_to_slugify: str,
+        **kwargs: Any,
+    ) -> str:
+        """Get a unique slug for the supplied value.
+
+        If the value is found to exist, a random 4 digit character is appended to the end.
+
+        Override this method to change the default behavior
+
+        Args:
+            value_to_slugify (str): A string that should be converted to a unique slug.
+            **kwargs: stuff
+
+        Returns:
+            str: a unique slug for the supplied value.  This is safe for URLs and other unique identifiers.
+        """
+        slug = slugify(value_to_slugify)
+        if await self._is_slug_unique(slug):
+            return slug
+        random_string = "".join(random.choices(string.ascii_lowercase + string.digits, k=4))  # noqa: S311
+        return f"{slug}-{random_string}"
+
+    async def _is_slug_unique(
+        self,
+        slug: str,
+        **kwargs: Any,
+    ) -> bool:
+        self.model_type.meta
+        return await self.exists(slug=slug) is False

@@ -12,7 +12,8 @@ from typing import (
 )
 from uuid import UUID
 
-from fimbu.db.filters import FilterTypes, LimitOffset, OffsetPagination
+from litestar.pagination import OffsetPagination
+from fimbu.db.filters import FilterTypes, LimitOffset
 from fimbu.core.types import ModelT, ModelDTOT, RowMappingT
 
 
@@ -24,7 +25,7 @@ if TYPE_CHECKING:
     from sqlalchemy.sql import ColumnElement
 
     from fimbu.db.filters import OffsetPagination, FilterTypes
-    from fimbu.core.types import FilterTypeT, ModelDTOT, RowMappingT, ModelT
+    from fimbu.core.types import T, ModelDTOT, RowMappingT, ModelT
 
 try:
     from msgspec import Struct, convert
@@ -85,9 +86,9 @@ def _default_deserializer(
 
 
 def _find_filter(
-    filter_type: type[FilterTypeT],
+    filter_type: type[T],
     *filters: Sequence[FilterTypes | ColumnElement[bool]] | Sequence[FilterTypes],
-) -> FilterTypeT | None:
+) -> T | None:
     """Get the filter specified by filter type from the filters.
 
     Args:
@@ -98,7 +99,7 @@ def _find_filter(
         The match filter instance or None
     """
     return next(
-        (cast("FilterTypeT | None", filter_) for filter_ in filters if isinstance(filter_, filter_type)),
+        (cast("T | None", filter_) for filter_ in filters if isinstance(filter_, filter_type)),
         None,
     )
 

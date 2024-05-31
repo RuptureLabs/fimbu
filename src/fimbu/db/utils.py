@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING, Any, cast
 from functools import lru_cache
+from urllib.parse import urlencode
 from copy import copy
 from fimbu.conf import settings
 from sqlalchemy.orm import InstrumentedAttribute
@@ -42,9 +43,12 @@ def get_database(db_settings: dict) -> tuple[str, Database] | None:
         else:
             port = db_settings["port"] if 'port' in db_settings else get_backend_default_port(backend)
             db_url = f"{backend}://{db_settings['user']}:{db_settings['password']}@{db_settings['host']}:{port}/{db_settings['database']}"
+
+        if 'options' in db_settings:
+            db_url += f"?{urlencode(db_settings['options'])}"
         
     except KeyError as exc:
-        raise ImproperlyConfigured("Invalid database settings") from exc
+        raise ImproperlyConfigured(f"Invalid database settings {exc}") from exc
     return db_settings['database'], Database(db_url)
 
 
@@ -103,12 +107,3 @@ def get_instrumented_attr(model: type[ModelProtocol], key: str | InstrumentedAtt
         return cast("InstrumentedAttribute", getattr(model.columns, key))
     return key
 
-
-def model_from_dict(model: ModelT, **kwargs: Any) -> ModelT:
-    """Return ORM Object from Dictionary."""
-    data = {
-        column_name: kwargs[column_name]
-        for column_name in model.__mapper__.columns.keys()  # noqa: SIM118
-        if column_name in kwargs
-    }
-    return model(**data)  # type: ignore  # noqa: PGH003
