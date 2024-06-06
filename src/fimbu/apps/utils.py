@@ -2,7 +2,6 @@ from typing import List, Iterable
 from pathlib import Path
 from litestar.template.config import TemplateConfig
 from litestar.static_files.config import StaticFilesConfig
-from litestar.plugins import InitPluginProtocol
 
 from fimbu.conf import settings
 from fimbu.core.exceptions import ImproperlyConfigured, LoadMiddlewareError

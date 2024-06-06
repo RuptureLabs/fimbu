@@ -56,7 +56,7 @@ def get_complete_version(version=None):
     check for correctness of the tuple provided.
     """
     if version is None:
-        from django import VERSION as version
+        from fimbu import __version__ as version
     else:
         assert len(version) == 5
         assert version[3] in ("alpha", "beta", "rc", "final")

@@ -8,6 +8,7 @@ from fimbu.conf import settings
 from sqlalchemy.orm import InstrumentedAttribute
 from fimbu.core.exceptions import ImproperlyConfigured
 from fimbu.db import Database, Registry
+from edgy.contrib.multi_tenancy import TenantRegistry
 from fimbu.db.base import DatabaseRegistry
 from fimbu.core.types import ModelT
 
@@ -21,6 +22,12 @@ if TYPE_CHECKING:
 def get_database(db_settings: dict) -> tuple[str, Database] | None:
     """
     Create database object
+
+    Args:
+        db_settings (dict): Database settings
+
+    Returns:
+        tuple[str, Database] | None: Database name and Database object
     """
     default_ports = {"postgres": 5432, "mysql": 3306, "mssql": 1433}
     supported_backends = copy(Database.SUPPORTED_BACKENDS)
@@ -54,13 +61,19 @@ def get_database(db_settings: dict) -> tuple[str, Database] | None:
 
 @lru_cache
 def get_db_registry() -> DatabaseRegistry:
+    """
+    Get database registry
+
+    Returns:
+        DatabaseRegistry: Database registry
+    """
     db_settings = getattr(settings, "DATABASES", None)
     _primary = None
     _dr = DatabaseRegistry()
 
-    if not db_settings and settings.USE_IN_MEMORY_DATABASE:
+    if not db_settings and (
+        settings.USE_IN_MEMORY_DATABASE or settings.ASGI_APPLICATION == 'fimbu.apps.main:app'):
         url = "sqlite:///:memory:"
-
         try:
             import aiosqlite
             url = "sqlite+aiosqlite:///:memory:"
@@ -96,14 +109,36 @@ def get_db_registry() -> DatabaseRegistry:
 
 
 @lru_cache()
-def get_db_connection():
+def get_db_connection(tenant:bool = False) -> tuple[Database, Registry]:
+    """
+    Get database connection
+
+    Args:
+        tenant (bool, optional): Use tenant Registry. Defaults to False.
+
+    Returns:
+        tuple[Database, Registry]: Database object and registry object
+    """
     database_registry = get_db_registry()
     database = database_registry.get_primary_db()
-    return database, Registry(database=database, extra=database_registry.get_extras())
+    registry = Registry(
+        database=database, 
+        extra=database_registry.get_extras()
+    ) if not tenant else TenantRegistry(database=database, extra=database_registry.get_extras())
+    return database, registry
 
 
 def get_instrumented_attr(model: type[ModelProtocol], key: str | InstrumentedAttribute) -> InstrumentedAttribute:
+    """
+    Get instrumented attribute
+
+    Args:
+        model (type[ModelProtocol]): Model type
+        key (str | InstrumentedAttribute): Attribute key
+
+    Returns:
+        InstrumentedAttribute: Instrumented attribute
+    """
     if isinstance(key, str):
         return cast("InstrumentedAttribute", getattr(model.columns, key))
     return key
-

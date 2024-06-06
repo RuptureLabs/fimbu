@@ -7,16 +7,19 @@ from typing import Annotated
 from litestar import Controller, delete, get, patch, post
 from litestar.di import Provide
 from litestar.params import Dependency, Parameter
+from litestar.pagination import OffsetPagination
+from litestar.dto import DTOData
 from uuid import UUID
 
 from fimbu.conf import settings
 from fimbu.contrib.auth.dependencies import provide_user_service
 from fimbu.contrib.auth.protocols import UserProtocol
 from fimbu.contrib.auth.guards import requires_superuser
-from fimbu.contrib.auth.schemas import User, UserCreate, UserUpdate
+from fimbu.contrib.auth.schemas import User
 from fimbu.contrib.auth.service import UserServiceType
 from fimbu.contrib.auth.utils import get_path
-from fimbu.db.filters import FilterTypes, OffsetPagination
+from fimbu.db.filters import FilterTypes
+from fimbu.contrib.auth.dto import CreateUserDTO, UpdateUserDTO
 
 
 
@@ -78,11 +81,12 @@ class UserController(Controller):
         cache_control=None,
         description="A user who can login and use the system.",
         path=get_path('/users', PREFIX),
+        dto=CreateUserDTO,
     )
     async def create_user(
         self,
         users_service: UserServiceType,
-        data: UserCreate,
+        data: User,
     ) -> User:
         """Create a new user."""
         db_obj = await users_service.register(data.to_dict())
@@ -92,10 +96,11 @@ class UserController(Controller):
         operation_id="UpdateUser",
         name="users:update",
         path=get_path('/users/{user_id:uuid}', PREFIX),
+        dto=UpdateUserDTO,
     )
     async def update_user(
         self,
-        data: UserUpdate,
+        data: DTOData[User],
         users_service: UserServiceType,
         user_id: UUID = Parameter(
             title="User ID",

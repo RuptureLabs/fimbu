@@ -1,6 +1,6 @@
 """
 Functions for reversing a regular expression (used in reverse URL resolving).
-Used internally by Oya and not intended for external use.
+Used internally by Fimbu and not intended for external use.
 
 This is not, and is not intended to be, a complete reg-exp decompiler. It
 should be good enough for a large class of URLS, however.

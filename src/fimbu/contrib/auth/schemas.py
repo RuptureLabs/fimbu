@@ -1,10 +1,13 @@
 from __future__ import annotations
 
+from typing import Annotated
+
 from datetime import datetime  # noqa: TCH003
 from uuid import UUID  # noqa: TCH003
 from dataclasses import dataclass
 
 import msgspec
+from msgspec import Meta
 
 from fimbu.contrib.auth.protocols import UserT
 from fimbu.contrib.schema import BaseStruct
@@ -12,72 +15,8 @@ from fimbu.contrib.schema import BaseStruct
 __all__ = (
     "AccountLogin",
     "AccountRegister",
-    "UserRoleAdd",
-    "UserRoleRevoke",
-    "UserCreate",
     "User",
-    "UserRole",
-    "UserTeam",
-    "UserUpdate",
 )
-
-
-
-
-class UserRole(BaseStruct):
-    """Holds role details for a user.
-
-    This is nested in the User Model for 'roles'
-    """
-
-    role_id: UUID
-    role_slug: str
-    role_name: str
-    assigned_at: datetime
-
-
-class OauthAccount(BaseStruct):
-    """Holds linked Oauth details for a user."""
-
-    id: UUID
-    oauth_name: str
-    access_token: str
-    account_id: str
-    account_email: str
-    expires_at: int | None = None
-    refresh_token: str | None = None
-
-
-class User(BaseStruct):
-    """User properties to use for a response."""
-
-    id: UUID
-    email: str
-    username: str | None = None
-    is_superuser: bool = False
-    is_active: bool = False
-    is_verified: bool = False
-    verified_at: datetime | None = None
-    joined_at: datetime | None = None
-
-
-class UserCreate(BaseStruct):
-    email: str
-    password: str
-    username: str 
-    is_superuser: bool = False
-    is_active: bool = True
-    is_verified: bool = False
-
-
-class UserUpdate(BaseStruct, omit_defaults=True):
-    email: str | None | msgspec.UnsetType = msgspec.UNSET
-    password: str | None | msgspec.UnsetType = msgspec.UNSET
-    username: str | None | msgspec.UnsetType = msgspec.UNSET
-    is_superuser: bool | None | msgspec.UnsetType = msgspec.UNSET
-    is_active: bool | None | msgspec.UnsetType = msgspec.UNSET
-    is_verified: bool | None | msgspec.UnsetType = msgspec.UNSET
-
 
 class AccountLogin(BaseStruct):
     email: str
@@ -90,20 +29,48 @@ class AccountRegister(BaseStruct):
     username: str | None = None
 
 
-class UserRoleAdd(BaseStruct):
-    """User role add ."""
-
+class User(BaseStruct):
+    """User properties to use for a response."""
+    id: UUID
     email: str
+    username: str | None = None
+    is_superuser: bool = False
+    is_active: bool = False
+    is_verified: bool = False
+    verified_at: datetime | None = None
+    joined_at: datetime | None = None
 
 
-class UserRoleRevoke(BaseStruct):
-    """User role revoke ."""
+class PermissionScope(BaseStruct, kw_only=True):
+    name: str
+    slug: str
+    codename: str
+    default: bool
+    default_permissins: str
+    description: str
 
-    email: str
 
+class Permission(BaseStruct, omit_defaults=True):
+    id : UUID
+    assigned_at: datetime
+    scope: PermissionScope
+    can_read: bool
+    can_write: bool
+    can_update: bool
+    can_delete: bool
+    can_approve: bool
+
+
+class PermissionUpdate(BaseStruct, omit_defaults=True):
+    scope: str
+    can_read: bool | None | msgspec.UnsetType = msgspec.UNSET
+    can_write: bool | None | msgspec.UnsetType = msgspec.UNSET
+    can_update: bool | None | msgspec.UnsetType = msgspec.UNSET
+    can_delete: bool | None | msgspec.UnsetType = msgspec.UNSET
+    can_approve: bool | None | msgspec.UnsetType = msgspec.UNSET
 
 
 @dataclass
-class UserRoles:
+class RuntimeUser:
     base : UserT
-    roles: list[str]
+    permissions: dict[str, PermissionUpdate]

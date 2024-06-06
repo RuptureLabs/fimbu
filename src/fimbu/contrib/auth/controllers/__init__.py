@@ -1,6 +1,5 @@
 from .access import AccessController
-from .roles import RoleController
-from .user_role import UserRoleController
+from .permissions import PermissionController
 from .users import UserController
 
-__all__ = ["AccessController", "UserController", "UserRoleController", "RoleController"]
+__all__ = ["AccessController", "UserController", "PermissionController",]

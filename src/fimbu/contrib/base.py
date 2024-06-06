@@ -1,13 +1,14 @@
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Literal, TypeVar, overload
+from typing import TYPE_CHECKING, Literal, TypeVar, overload, Any
 
 from litestar.dto import DataclassDTO, dto_field
 from litestar.dto.config import DTOConfig
 from litestar.types.protocols import DataclassProtocol
 from litestar.contrib.pydantic import PydanticDTO
 from fimbu.db import Model
-from fimbu.core.types import ModelT
+import msgspec
+
 
 if TYPE_CHECKING:
     from collections.abc import Set as AbstractSet
@@ -19,7 +20,6 @@ __all__ = ("config", "dto_field", "DTOConfig", "SQLAlchemyDTO", "DataclassDTO")
 DTOT = TypeVar("DTOT", bound=DataclassProtocol | Model)
 DTOFactoryT = TypeVar("DTOFactoryT", bound=DataclassDTO | PydanticDTO)
 DataclassModelT = TypeVar("DataclassModelT", bound=DataclassProtocol)
-
 
 
 @overload
@@ -71,3 +71,13 @@ def config(
     if partial:
         default_kwargs["partial"] = partial
     return DTOConfig(**default_kwargs)
+
+
+class BaseStruct(msgspec.Struct):
+    def to_dict(self) -> dict[str, Any]:
+        return {f: getattr(self, f) for f in self.__struct_fields__ if getattr(self, f, None) != msgspec.UNSET}
+
+
+class Message(BaseStruct):
+    message: str
+

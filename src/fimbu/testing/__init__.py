@@ -20,7 +20,7 @@ class TestClient(ListarTestClient):
     pass
 
 
-class  AsyncTestClient(ListarAsyncTestClient):
+class AsyncTestClient(ListarAsyncTestClient):
     pass
 
 

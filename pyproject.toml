@@ -57,7 +57,7 @@ mail = [
     "redis>=5.0.4",
     "blinker>=1.8.1",
 ]
-testing = ["edgy[testing]", "litestar[test]"]
+testing = ["edgy[testing]", "litestar[test]", "pytest>=8.2.1"]
 all = [
     "edgy[postgres,mysql,sqlite,testing]",
     "fimbu[mail]",

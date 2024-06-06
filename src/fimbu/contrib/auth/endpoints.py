@@ -1,13 +1,12 @@
 from fimbu.contrib.auth.controllers import (
     AccessController,
-    RoleController,
-    UserRoleController,
+    PermissionController,
     UserController
 )
 
+
 __handlers__ = [
     AccessController,
-    RoleController,
+    PermissionController,
     UserController,
-    UserRoleController
 ]

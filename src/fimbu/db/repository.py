@@ -5,9 +5,9 @@ from typing import Any, Generic, Collection
 import string
 import random
 from datetime import datetime
+from uuid import UUID
 from edgy import ObjectNotFound, QuerySet, or_
 from litestar.repository.abc import AbstractAsyncRepository
-from litestar.repository.filters import FilterTypes
 from sqlalchemy import text
 from fimbu.core.types import ModelT, T
 
@@ -359,18 +359,45 @@ class AsyncRepository(AbstractAsyncRepository[ModelT], FilterableRepository[Mode
         return await self.model_type.query.filter(**kwargs).first()
 
 
-    async def update(self, data: ModelT, **kwargs: Any) -> ModelT:
-        """Update instance with the attribute values present on ``data``.
+    async def update_instance(self, instance: ModelT | UUID, **kwargs: Any) -> ModelT:
+        """Update instance with the attribute values present on ``kwargs``.
 
         Args:
-            data: An instance that should have a value for :attr:`id_attribute <AbstractAsyncRepository.id_attribute>` that exists in the
+            instance: An instance that should have a value for :attr:`id_attribute <AbstractAsyncRepository.id_attribute>` that exists in the
                 collection.
 
         Returns:
             The updated instance.
         """
-        return await data.update(**kwargs)
+        if isinstance(instance, UUID):
+            instance = await self.model_type.query.get(id=instance)
+        
+        for key, value in kwargs.items():
+            setattr(instance, key, value)
 
+        await instance.save()
+        return instance
+    
+
+    async def update(self, **kwargs: Any) -> None:
+        """Update instance with the attribute values present on ``kwargs``.
+
+        Args:
+            kwargs: An instance that should have a value for :attr:`id_attribute <AbstractAsyncRepository.id_attribute>` that exists in the
+                collection.
+
+        Returns:
+            None.
+
+        Raises:
+            ObjectNotFound: If no instance found with same identifier as ``kwargs``.
+        """
+        if not self.id_attribute in kwargs:
+            raise ValueError(f"Missing {self.id_attribute} in kwargs for update")
+        
+        pk = kwargs.pop(self.id_attribute)
+        return await self.model_type.query.filter(**{self.id_attribute: pk}).update(**kwargs)
+    
 
     async def update_many(self, data: list[ModelT]) -> None:
         """Update multiple instances with the attribute values present on instances in ``data``.

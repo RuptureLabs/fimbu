@@ -1,13 +1,13 @@
 from __future__ import annotations
 
 from typing import Any, Generic
-from fimbu.core.exceptions import ImproperlyConfigured
-from fimbu.contrib.auth.models import Role
-from fimbu.contrib.auth.protocols import RoleT, UserT
+from uuid import UUID
+from fimbu.contrib.auth.models import PermissionScope, Permission
+from fimbu.contrib.auth.protocols import PermScopteT, PermT, UserT
 from fimbu.db.repository import AsyncRepository
 
 
-__all__ = ["RoleRepository", "UserRepository"]
+__all__ = ["PermissionScopeRepository", "UserRepository"]
 
 
 
@@ -24,36 +24,26 @@ class UserRepository(AsyncRepository[UserT], Generic[UserT]):
         super().__init__(self.model_type)
 
 
-    async def _update(self, user: UserT, data: dict[str, Any]) -> UserT:
-        for key, value in data.items():
-            setattr(user, key, value)
+class PermissionScopeRepository(AsyncRepository[PermissionScope]):
 
-        return user
+    def __init__(self) -> None:
+        self.model_type = PermissionScope
+        super().__init__(self.model_type)
+
+    
+    async def suscribe_user(self, scope_id: UUID, user: UserT) -> PermT:
+        scope = await self.get(scope_id)
+        return await scope.suscribe_user(user)
     
 
-    async def assign_role(self, user: UserT, role: RoleT) -> UserT:
-        """Add a role to a user.
-
-        Args:
-            user: The user to receive the role.
-            role: The role to add to the user.
-        """
-        user.roles.add(role)
-        return user
-
-    async def revoke_role(self, user: UserT, role: RoleT) -> UserT:
-        """Revoke a role from a user.
-
-        Args:
-            user: The user to revoke the role from.
-            role: The role to revoke from the user.
-        """
-        user.roles.remove(role)
-        return user
+    async def unscribe_user(self, scope_id: UUID, user: UserT) -> PermT | None:
+        scope = await self.get(scope_id)
+        return await scope.unscribe_user(user)
 
 
-class RoleRepository(AsyncRepository[Role]):
-    """Role Repository."""
 
-    model_type = Role
-    
+class PermissionRepository(AsyncRepository[Permission]):
+
+    def __init__(self) -> None:
+        self.model_type = Permission
+        super().__init__(self.model_type)

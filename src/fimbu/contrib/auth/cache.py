@@ -4,7 +4,7 @@ from typing import TYPE_CHECKING
 
 from pydantic_core import from_json
 
-from fimbu.contrib.auth.models import User, Role
+from fimbu.contrib.auth.models import User, PermissionScope, Permission
 from fimbu.contrib.auth.utils import get_user_model
 
 if TYPE_CHECKING:

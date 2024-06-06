@@ -1,13 +1,13 @@
 import uuid
 from uuid import UUID
 from datetime import datetime
-from fimbu.db import fields, Model
+from fimbu.db import fields, Model, GUIDField
 
 class UUIDMixin(Model):
     """
     UUID mixin base
     """
-    id: UUID = fields.UUIDField(primary_key=True, default=uuid.uuid4)
+    id: UUID = GUIDField(primary_key=True, default=uuid.uuid4)
     """uuid primary key"""
 
     class Meta:

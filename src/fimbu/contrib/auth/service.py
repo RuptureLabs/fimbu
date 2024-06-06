@@ -6,14 +6,18 @@ from uuid import UUID
 
 from jose import JWTError
 from litestar.contrib.jwt.jwt_token import Token
-from litestar.exceptions import ImproperlyConfiguredException
-from fimbu.contrib.auth.models import Role
-from fimbu.contrib.auth.protocols import RoleT, UserT
+from fimbu.contrib.auth.models import PermissionScope, Permission
+from fimbu.contrib.auth.protocols import PermScopteT, PermT, UserT
 from fimbu.contrib.auth.exceptions import InvalidTokenException
+from fimbu.contrib.auth.schemas import PermissionUpdate
 from fimbu.utils.crypto import PasswordManager
 from fimbu.db import ResultConverter
 
-from fimbu.contrib.auth.repository import RoleRepository, UserRepository
+from fimbu.contrib.auth.repository import (
+    PermissionRepository,
+    PermissionScopeRepository,
+    UserRepository
+)
 
 from fimbu.db.exceptions import DuplicateRecordError, ObjectNotFound
 
@@ -46,11 +50,11 @@ class BaseUserService(Generic[UserT], ResultConverter):  # pylint: disable=R0904
             role_repository: A `RoleRepository` instance.
         """
         self.user_repository = user_repository
-        self.role_repository = RoleRepository(Role)
+        self.permission_scope_repository = PermissionScopeRepository()
+        self.permission_repository = PermissionRepository()
         self.secret = secret
         self.password_manager = PasswordManager(hash_schemes=hash_schemes)
         self.user_model = self.user_repository.model_type
-        self.role_model = Role
         
 
     async def add_user(self, user: UserT, verify: bool = False, activate: bool = True) -> UserT:
@@ -61,14 +65,21 @@ class BaseUserService(Generic[UserT], ResultConverter):  # pylint: disable=R0904
             verify: Set the user's verification status to this value.
             activate: Set the user's active status to this value.
         """
-        existing_user = await self.get_user_by(email=user.email)
+        existing_user = await self.user_repository.exists(email=user.email)
         if existing_user:
             raise DuplicateRecordError("email already associated with an account")
 
         user.is_verified = verify
         user.is_active = activate
 
-        return await self.user_repository.add(user)
+        user = await self.user_repository.add(user)
+        scopes = await self.perm_scope_repository.list(default=True)
+        permissions = [s.create_permission(user) for s in scopes]
+        
+        await self.permission_repository.add_many(permissions)
+
+        return user
+
 
     async def register(self, data: dict[str, Any], request: Request | None = None) -> UserT:
         """Register a new user and optionally run custom business logic.
@@ -154,7 +165,7 @@ class BaseUserService(Generic[UserT], ResultConverter):  # pylint: disable=R0904
             data.password, user.password_hash
         )
         if new_password_hash is not None:
-            user = await self.user_repository._update(user, {"password_hash": new_password_hash})
+            user = await self.user_repository.update_instance(user, {"password_hash": new_password_hash})
 
         if not password_verified or not should_proceed:
             return None
@@ -358,117 +369,98 @@ class BaseUserService(Generic[UserT], ResultConverter):  # pylint: disable=R0904
             raise InvalidTokenException(f"aud value must be {context}")
 
         return token
-
-    async def get_role(
-        self,
-        id_: UUID | None = None,
-        slug: str | None = None) -> Role:
-        """Retrieve a role by id or by slug.
-
-        Args:
-            id_: UUID of the role.
-            slug: Slug of the role.
-        """
-        if self.role_repository is None:
-            raise ImproperlyConfiguredException("roles have not been configured")
-        
-        if id_ is not None:
-            return await self.role_repository.get(id_)
-        elif slug is not None:
-            return await self.role_repository.get_one(slug=slug)
-        else:
-            raise ValueError("role id or slug must be provided")
-        
-
-    async def get_roles(self) -> list[Role]:
-        """Retrieve all roles."""
-        if self.role_repository is None:
-            raise ImproperlyConfiguredException("roles have not been configured")
-        return await self.role_repository.list()
     
 
-    async def get_role_by_name(self, name: str) -> Role:
-        """Retrieve a role by name.
-
-        Args:
-            name: The name of the role.
+    async def get_all_scopes(self) -> list[PermissionScope]:
         """
-        if self.role_repository is None:
-            raise ImproperlyConfiguredException("roles have not been configured")
-        return await self.role_repository.get_one(name=name)
+        Get all scopes.
 
-    async def add_role(self, data: Role) -> Role:
-        """Add a new role to the database.
-
-        Args:
-            data: A role creation data transfer object.
+        Returns:
+            list[PermissionScope]: A list of all scopes.
         """
-        if self.role_repository is None:
-            raise ImproperlyConfiguredException("roles have not been configured")
-        return await self.role_repository.add(data)
+        return await self.permission_scope_repository.list()
 
-    async def update_role(self, id_: "UUID", data: Role) -> Role:
-        """Update a role in the database.
 
-        Args:
-            id_: UUID corresponding to the role primary key.
-            data: A role update data transfer object.
+    async def get_scope_permissions(self, scope: PermScopteT ) -> list[Permission]:
         """
-        if self.role_repository is None:
-            raise ImproperlyConfiguredException("roles have not been configured")
-        return await self.role_repository.update(data)
-
-    async def delete_role(self, id_: "UUID") -> Role:
-        """Delete a role from the database.
-
+        Get all permissions for a given scope.
+        
         Args:
-            id_: UUID corresponding to the role primary key.
-        """
-        if self.role_repository is None:
-            raise ImproperlyConfiguredException("roles have not been configured")
-        return await self.role_repository.delete(id_)
+            scope (PermScopteT): The scope to get permissions for.
 
+        Returns:
+            list[Permission]: A list of permissions for this scope.
+        """
+        return await self.permission_repository.list(scope=scope)
     
-    async def assign_role(self, user: "UUID" | UserT, role: "UUID" | RoleT) -> UserT:
-        """Add a role to a user.
+
+    async def get_user_permissions(self, user: UserT) -> list[Permission]:
+        """
+        Get all permissions for a given user.
 
         Args:
-            user_id: UUID of the user to receive the role.
-            role_id: UUID of the role to add to the user.
+            user (UserT): The user to get permissions for.
+
+        Returns:
+            list[Permission]: A list of permissions for this user.
         """
-        
-        if isinstance(user, UUID):
-            user = await self.get_user(user)
-        if isinstance(role, UUID):
-            role = await self.get_role(role)
+        return await self.permission_repository.list(user=user)
+    
 
-        if not hasattr(user, "roles"):
-            raise ImproperlyConfiguredException("roles have not been configured")
-
-        if isinstance(user.roles, list) and role in user.roles:  # pyright: ignore
-            raise DuplicateRecordError(f"user already has role '{role.name}'")
-        
-        return await self.user_repository.assign_role(user, role)
-
-
-    async def revoke_role(self, user_id: "UUID", role_id: "UUID") -> None:
-        """Revoke a role from a user.
+    async def get_user_scopes(self, user: UUID) -> list[PermissionScope]:
+        """
+        Get use's scopes
 
         Args:
-            user_id: UUID of the user to revoke the role from.
-            role_id: UUID of the role to revoke.
+            user (UserT): The user to get scopes for.
+
+        Returns:
+            list[PermissionScope]: A list of scopes for this user.
         """
-        
-        user = await self.get_user(user_id)
-        role = await self.get_role(role_id)
+        return await self.permission_scope_repository.list(permissions__user__id=user)
 
-        if not hasattr(user, "roles"):
-            raise ImproperlyConfiguredException("roles have not been configured")
 
-        if isinstance(user.roles, list) and role not in user.roles:  # pyright: ignore
-            raise DuplicateRecordError(f"user does not have role '{role.name}'")
-        
-        return await self.user_repository.revoke_role(user, role)
+    async def grant_permission(self, scope_id: UUID, user: UserT) -> Permission:
+        """
+        Grant permission to a user in a given scope.
+
+        Args:
+            scope_id (UUID): The scope to grant permission in.
+            user (UserT): The user to grant permission to.
+
+        Returns:
+            Permission: The created permission.
+        """
+        return await self.permission_scope_repository.suscribe_user(scope_id, user)
+    
+
+    async def revoke_permission(self, scope_id: UUID, user: UserT) -> Permission | None:
+        """
+        Revoke permission from a user in a given scope.
+
+        Args:
+            scope_id (UUID): The scope to revoke permission in.
+            user (UserT): The user to revoke permission from.
+
+        Returns:
+            Permission: The deleted permission.
+        """
+        return await self.permission_scope_repository.unscribe_user(scope_id, user)
+    
+
+    async def update_permission(self, permission_id: UUID, data: PermissionUpdate ) -> Permission:
+        """
+        Update a permission.
+
+        Args:
+            permission_id (UUID): The permission to update.
+            data (PermissionUpdate): The data to update the permission with.
+
+        Returns:
+            Permission: The updated permission.
+        """
+        permission = await self.permission_repository.get(permission_id)
+        await self.permission_repository.update(permission, data.to_dict())
 
 
 UserServiceType = TypeVar("UserServiceType", bound=BaseUserService)
