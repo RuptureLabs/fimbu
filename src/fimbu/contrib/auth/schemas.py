@@ -10,7 +10,7 @@ import msgspec
 from msgspec import Meta
 
 from fimbu.contrib.auth.protocols import UserT
-from fimbu.contrib.schema import BaseStruct
+from fimbu.contrib.base import BaseStruct
 
 __all__ = (
     "AccountLogin",

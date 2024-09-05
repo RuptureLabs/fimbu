@@ -97,8 +97,8 @@ fimbu_cli.add_command(core.run_command)
 fimbu_cli.add_command(sessions.sessions_group)
 fimbu_cli.add_command(schema.schema_group)
 
-fimbu_cli.add_command(start_app, name="start-app")
-fimbu_cli.add_command(start_project, name="start-project")
+fimbu_cli.add_command(start_app, name="startapp")
+fimbu_cli.add_command(start_project, name="startproject")
 
 fimbu_cli.add_command(list_templates)
 fimbu_cli.add_command(init, name="init")

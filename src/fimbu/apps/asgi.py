@@ -39,7 +39,7 @@ from fimbu.middleware.builtins import (
     get_response_cache_config
 )
 
-from ..utils import get_template_config, get_static_file_config, get_middleware
+from .utils import get_template_config, get_static_file_config, get_middleware
 
 from fimbu.db import Migrate
 from fimbu.db import get_db_connection

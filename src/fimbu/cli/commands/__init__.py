@@ -14,7 +14,7 @@ from jinja2 import Environment, FileSystemLoader
 from edgy import Registry
 from edgy.cli.env import MigrationEnv
 from edgy.cli.operations.shell.base import handle_lifespan_events
-from edgy.core.sync import execsync
+from edgy.core.utils.sync import run_sync
 from edgy.utils.inspect import InspectDB
 
 import fimbu
@@ -46,8 +46,8 @@ __all__ = [
 
 @click.option(
     '-s', '--secret-key-size', 'secret_key_size',
-    default=32,
-    type=click.Choice([16, 24, 32]),
+    default='32',
+    type=click.Choice(['16', '24', '32']),
     help="The size of the secret key"
 )
 def start_project(name: str, dest: str, secret_key_size: int):
@@ -105,7 +105,6 @@ class Starter(object):
             except OSError as e:
                 raise CommandError from  e
         else:
-            target = target[0]
             root_dir = os.path.abspath(os.path.expanduser(target))
             if self.is_application:
                 self.validate_name(os.path.basename(root_dir), 'directory')
@@ -300,7 +299,7 @@ def shell(env: MigrationEnv) -> None:
     lifespan = handle_lifespan_events(
         on_startup=on_startup, on_shutdown=on_shutdown, lifespan=lifespan
     )
-    execsync(run_shell)(env.app, lifespan, registry)
+    run_sync(run_shell(env.app, lifespan, registry))
     return None
 
 

@@ -20,7 +20,7 @@ from fimbu.contrib.auth.schemas import AccountLogin, AccountRegister, User
 from fimbu.contrib.auth.protocols import UserT, UserProtocol
 from fimbu.core.exceptions import ImproperlyConfiguredException
 from fimbu.contrib.auth.service import UserService, UserServiceType
-from fimbu.contrib.schema import Message
+from fimbu.contrib.base import Message
 from fimbu.utils.text import slugify
 from fimbu.contrib.auth.utils import get_user_model, get_auth_backend, user_is_verified
 from fimbu.contrib.auth.utils import get_path

@@ -29,18 +29,19 @@ classifiers = [
   "Topic :: Software Development :: Libraries :: Python Modules",
 ]
 dependencies = [
-    "edgy[postgres]>=0.10.1",
-    "litestar[jwt]>=2.8.3",
-    "black>=24.4.2",
-    "rich-click>=1.8.0",
-    "cryptography>=42.0.5",
+    "edgy[postgres]>=0.14.1",
+    "litestar[jwt]>=2.11.0",
+    "black>=24.8.0",
+    "rich-click>=1.8.3",
+    "cryptography>=43.0.1",
     "aiosqlite>=0.20.0",
     "python-jose>=3.3.0",
     "passlib>=1.7.4",
     "argon2-cffi>=23.1.0",
-    "structlog>=24.1.0",
-    "Babel>=2.15.0",
-    "pydantic>=2.7.1",
+    "structlog>=24.4.0",
+    "Babel>=2.16.0",
+    "pydantic>=2.8.2",
+    "uvicorn>=0.30.6",
 ]
 requires-python = ">=3.10"
 readme = "README.md"
@@ -48,14 +49,14 @@ license = {text = "MIT"}
 
 [project.optional-dependencies]
 shell = [
-    "ptpython>=3.0.26",
+    "ptpython>=3.0.29",
 ]
 mail = [
-    "aiosmtplib>=3.0.1",
+    "aiosmtplib>=3.0.2",
     "dnspython>=2.6.1",
-    "email-validator>=2.1.1",
-    "redis>=5.0.4",
-    "blinker>=1.8.1",
+    "email-validator>=2.2.0",
+    "redis>=5.0.8",
+    "blinker>=1.8.2",
 ]
 testing = ["edgy[testing]", "litestar[test]", "pytest>=8.2.1"]
 all = [
@@ -68,8 +69,8 @@ task = [
     "dramatiq>=1.17.0",
 ]
 fullstack = [
-    "litestar-vite>=0.1.22",
-    "litestar-saq>=0.1.21",
+    "litestar-vite>=0.2.9",
+    "litestar-saq>=0.2.0",
 ]
 
 [build-system]
@@ -78,3 +79,7 @@ build-backend = "pdm.backend"
 
 [project.scripts]
 fimbu = "fimbu.__main__:run_cli"
+
+[tool.pdm]
+[tool.pdm.dev-dependencies]
+dev = []
