@@ -18,6 +18,7 @@ if TYPE_CHECKING:
     from litestar.middleware.session.base import BaseBackendConfig
     from litestar.stores.redis import RedisStore
     from fimbu.contrib.auth.service import BaseUserService
+    from fimbu.contrib.auth.backends.base import AbstractAuthenticationBackend
 
 
 
@@ -26,8 +27,10 @@ if TYPE_CHECKING:
 class AuthConfig(Generic[UserT]):
     """Configuration class for LitestarUsers."""
 
-    auth_backend_class: type[JWTAuth | JWTCookieAuth | SessionAuth]
-    """The authentication backend to use by Litestar."""
+    auth_backend: str
+    """The authentication backend to use by default."""
+    auth_backends : list[AbstractAuthenticationBackend]
+    """List of authentication backends."""
     secret: str
     """Secret string for securely signing tokens."""
     user_model: type[UserT]
@@ -48,22 +51,13 @@ class AuthConfig(Generic[UserT]):
 
     Defaults to `["argon2"]`
     """
-    session_backend_config: BaseBackendConfig | None = None
-    """Optional backend configuration for session based authentication.
-
-    Notes:
-        - Required if `auth_backend_class` is `SessionAuth`.
-    """
+    
 
     def __post_init__(self) -> None:
         """Validate the configuration.
 
         - A session backend must be configured if `auth_backend_class` is `SessionAuth`.
         """
-        if self.auth_backend_class == SessionAuth and not self.session_backend_config:
-            raise ImproperlyConfiguredException(
-                'session_backend_config must be set when auth_backend is set to "session"'
-            )
 
         if len(self.secret) not in [16, 24, 32]:
             raise ImproperlyConfiguredException("secret must be 16, 24 or 32 characters")

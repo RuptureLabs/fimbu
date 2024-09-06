@@ -1,15 +1,14 @@
 from __future__ import annotations
 
-from fimbu.contrib.auth.utils import get_auth_config, get_user_model
-from fimbu.db.exceptions import RepositoryError
-from litestar.contrib.jwt import JWTAuth, JWTCookieAuth, OAuth2PasswordBearerAuth
-from litestar.plugins import CLIPluginProtocol, InitPluginProtocol
-from litestar.security.session_auth import SessionAuth
+from typing import TYPE_CHECKING
 
 from click import Group
 from litestar.config.app import AppConfig
+from litestar.plugins import CLIPluginProtocol, InitPluginProtocol
 from litestar.types import ExceptionHandlersMap
 from fimbu.contrib.auth.config import AuthConfig
+from fimbu.contrib.auth.utils import get_auth_config, get_user_model
+from fimbu.db.exceptions import RepositoryError
 
 from fimbu.conf import settings
 from fimbu.core.types import ApplicationType
@@ -19,10 +18,10 @@ from fimbu.contrib.auth.exceptions import (
     token_exception_handler
 )
 
-from fimbu.contrib.auth.retrieve_user import (
-    jwt_retrieve_user_handler,
-    session_retrieve_user_handler,
-)
+from fimbu.contrib.auth.backends.base import AuthenticationMiddleware
+
+if TYPE_CHECKING:
+    from fimbu.contrib.auth.backends.base import AuthenticationBackend
 
 
 __all__ = ["AuthPlugin", "AuthConfig", "install_auth_plugin"]
@@ -34,6 +33,9 @@ class AuthPlugin(InitPluginProtocol, CLIPluginProtocol):
     def __init__(self, config: AuthConfig) -> None:
         """Construct a LitestarUsers instance."""
         self._config = config
+        self._auth_manager : AuthenticationMiddleware | None = None
+        self._init()
+
 
     def on_app_init(self, app_config: AppConfig) -> AppConfig:
         """Register routers, auth strategies etc on the Litestar app.
@@ -41,9 +43,17 @@ class AuthPlugin(InitPluginProtocol, CLIPluginProtocol):
         Args:
             app_config: An instance of [AppConfig][litestar.config.AppConfig]
         """
-        auth_backend = self._get_auth_backend()
 
-        app_config = auth_backend.on_app_init(app_config)
+        for backend in self._config.auth_backends:
+            app_config = backend.on_app_init(app_config)
+
+
+        app_config.middleware.insert(
+            0, AuthenticationMiddleware.build_middleware(
+                default_backend=self._config.auth_backend,
+                backends=self._config.auth_backends 
+            )
+        )
 
         exception_handlers: ExceptionHandlersMap = {
             RepositoryError: repository_exception_to_http_response,  # type: ignore[dict-item]
@@ -56,44 +66,21 @@ class AuthPlugin(InitPluginProtocol, CLIPluginProtocol):
 
         return app_config
 
+
     def on_cli_init(self, cli: Group) -> None:
         from fimbu.contrib.auth.cli import user_management_group
 
         cli.add_command(user_management_group)
         return super().on_cli_init(cli)
 
-    def _get_auth_backend(self) -> JWTAuth | JWTCookieAuth | SessionAuth | OAuth2PasswordBearerAuth:
-        if issubclass(self._config.auth_backend_class, SessionAuth):
-            self._config.auth_backend = self._config.auth_backend_class[self._config.user_model, type(self._config.session_backend_config)](
-                retrieve_user_handler=session_retrieve_user_handler,  # type: ignore[arg-type]
-                session_backend_config=self._config.session_backend_config,  # type: ignore
-                exclude=settings.AUTH_EXCLUDE_PATHS,
-            )
 
-            return self._config.auth_backend
-        
-        elif issubclass(self._config.auth_backend_class, OAuth2PasswordBearerAuth):
-            self._config.auth_backend = self._config.auth_backend_class[self._config.user_model](
-                retrieve_user_handler=jwt_retrieve_user_handler,
-                token_secret=self._config.secret,
-                token_url="/auth/login",
-                exclude=settings.AUTH_EXCLUDE_PATHS,
-            )
+    def get_auth_backend(self) -> AuthenticationBackend | None:
+        """
+        Returns:
+            The authentication backend to use.
+        """
+        return self._auth_manager.backend
 
-            return self._config.auth_backend
-
-        elif issubclass(self._config.auth_backend_class, JWTAuth) or issubclass(
-            self._config.auth_backend_class, JWTCookieAuth
-        ):
-            self._config.auth_backend = self._config.auth_backend_class(
-                retrieve_user_handler=jwt_retrieve_user_handler,
-                token_secret=self._config.secret,
-                exclude=settings.AUTH_EXCLUDE_PATHS,
-            )
-
-            return self._config.auth_backend
-        
-        raise ValueError("invalid auth backend")
 
 
 def install_auth_plugin(app: ApplicationType) -> None:
